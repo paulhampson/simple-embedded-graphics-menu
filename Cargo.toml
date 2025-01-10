@@ -6,3 +6,7 @@ edition = "2021"
 [dependencies]
 embedded-graphics = "0.8.1"
 embedded-graphics-simulator = "0.7.0"
+embedded-layout = "0.4.1"
+heapless = "0.8.0"
+print-no-std = "0.2.1"
+trees = { version= "0.4.2", features = ["no_std"] }
