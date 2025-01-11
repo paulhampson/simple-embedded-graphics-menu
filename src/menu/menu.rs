@@ -1,11 +1,12 @@
 use core::cmp::PartialEq;
 use core::fmt::Formatter;
 use core::{error, fmt};
+use embedded_graphics::geometry::AnchorY;
 use embedded_graphics::mono_font::MonoTextStyle;
 use embedded_graphics::prelude::*;
 use embedded_graphics::primitives::Rectangle;
 use embedded_graphics::text::renderer::TextRenderer;
-use embedded_graphics::text::Baseline;
+use embedded_graphics::text::{Baseline, Text};
 use embedded_layout::View;
 use print_no_std::println;
 use trees::{Iter, Tree};
@@ -43,7 +44,7 @@ where
     label: &'static str,
     item_type: MenuItemType,
     highlighted: bool,
-    text_style: MonoTextStyle<'a, C>,
+    character_style: MonoTextStyle<'a, C>,
     position: Point,
 }
 
@@ -54,13 +55,13 @@ where
     pub const fn new<'a>(
         label: &'static str,
         item_type: MenuItemType,
-        text_style: MonoTextStyle<'a, C>,
+        character_style: MonoTextStyle<'a, C>,
     ) -> MenuItem<'a, C> {
         MenuItem::<'a, C> {
             label,
             item_type,
             highlighted: false,
-            text_style,
+            character_style,
             position: Point::zero(),
         }
     }
@@ -71,7 +72,7 @@ where
     C: PixelColor,
 {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "{} -> {:?}", self.label, self.item_type)
+        write!(f, "[\"{}\":{:?}]", self.label, self.item_type)
     }
 }
 
@@ -84,9 +85,31 @@ where
     }
 
     fn bounds(&self) -> Rectangle {
-        self.text_style
+        self.character_style
             .measure_string(self.label, Point::zero(), Baseline::Bottom)
             .bounding_box
+    }
+}
+
+impl<C> Drawable for MenuItem<'_, C>
+where
+    C: PixelColor,
+{
+    type Color = C;
+    type Output = ();
+
+    fn draw<D>(&self, display: &mut D) -> Result<Self::Output, D::Error>
+    where
+        D: DrawTarget<Color = Self::Color>,
+    {
+        let item_text = Text::with_baseline(
+            self.label,
+            self.position,
+            self.character_style,
+            Baseline::Top,
+        );
+        item_text.draw(display)?;
+        Ok(())
     }
 }
 
@@ -98,6 +121,43 @@ where
     bounds: Rectangle,
     heading_style: MonoTextStyle<'a, C>,
     item_style: MonoTextStyle<'a, C>,
+}
+
+impl<'a, C> Drawable for Menu<'a, C>
+where
+    C: PixelColor,
+{
+    type Color = C;
+    type Output = ();
+
+    fn draw<D>(&self, display: &mut D) -> Result<Self::Output, D::Error>
+    where
+        D: DrawTarget<Color = Self::Color>,
+    {
+        let display_area = display.bounding_box();
+        let header = self.menu_tree.data();
+        let header_height = header.size().height;
+        header.draw(display)?;
+        let mut remaining_item_area = display_area
+            .resized_height(display_area.size().height - header_height, AnchorY::Bottom);
+
+        for menu_item in self.menu_tree.iter() {
+            let item_height = menu_item.data().size().height;
+            if item_height > remaining_item_area.size().height {
+                break;
+            }
+
+            let mut item_display = display.cropped(&remaining_item_area);
+            menu_item.data().draw(&mut item_display)?;
+
+            remaining_item_area = remaining_item_area.resized_height(
+                remaining_item_area.size().height - item_height,
+                AnchorY::Bottom,
+            );
+        }
+
+        Ok(())
+    }
 }
 
 impl<'a, C> Menu<'a, C>
@@ -124,15 +184,19 @@ where
         self.menu_tree.push_back(Tree::new(item));
     }
 
+    /// Add checkbox as next item in the menu
     pub fn add_checkbox(&mut self, label: &'static str) {
         let item = MenuItem::new(label, MenuItemType::Checkbox, self.item_style);
         self.add_item(item);
     }
+
+    /// Add selector as next item in the menu
     pub fn add_selector(&mut self, label: &'static str) {
         let item = MenuItem::new(label, MenuItemType::Selector, self.item_style);
         self.add_item(item);
     }
 
+    /// Add header as next item in the menu
     pub fn add_header(&mut self, label: &'static str) {
         let item = MenuItem::new(label, MenuItemType::Heading, self.heading_style);
         self.add_item(item);
