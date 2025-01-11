@@ -6,7 +6,7 @@
 
 mod menu;
 
-use crate::menu::menu::{Menu, MenuStyle};
+use crate::menu::{Menu, MenuStyle};
 use embedded_graphics::mono_font::ascii::{FONT_6X10, FONT_7X13_BOLD};
 use embedded_graphics::{mono_font::MonoTextStyle, pixelcolor::BinaryColor, prelude::*};
 use embedded_graphics_simulator::{

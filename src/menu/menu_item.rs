@@ -1,4 +1,4 @@
-use crate::menu::menu::MenuStyle;
+use crate::menu::MenuStyle;
 use core::fmt;
 use core::fmt::Formatter;
 use embedded_graphics::draw_target::DrawTarget;
