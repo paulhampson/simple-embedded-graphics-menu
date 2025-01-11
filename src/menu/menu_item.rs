@@ -47,6 +47,10 @@ where
             position: Point::zero(),
         }
     }
+
+    pub fn label(&self) -> &str {
+        self.label
+    }
 }
 
 impl<C> fmt::Display for MenuItem<'_, C>

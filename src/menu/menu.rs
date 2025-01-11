@@ -2,6 +2,8 @@ use crate::menu::menu_item::{MenuItem, MenuItemType};
 use embedded_graphics::geometry::AnchorY;
 use embedded_graphics::mono_font::MonoTextStyle;
 use embedded_graphics::prelude::*;
+use embedded_graphics::text::renderer::TextRenderer;
+use embedded_graphics::text::{Baseline, Text};
 use embedded_layout::View;
 use trees::Tree;
 
@@ -72,8 +74,15 @@ where
     {
         let display_area = display.bounding_box();
         let header = self.menu_tree.data();
-        let header_height = header.size().height;
-        header.draw(display)?;
+        let header_height = self.heading_style.line_height();
+        Text::with_baseline(
+            header.label(),
+            Point::zero(),
+            self.heading_style,
+            Baseline::Top,
+        )
+        .draw(display)?;
+
         let mut remaining_item_area = display_area
             .resized_height(display_area.size().height - header_height, AnchorY::Bottom);
 
