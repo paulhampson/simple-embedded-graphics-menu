@@ -6,21 +6,17 @@
 
 mod menu;
 
-use crate::menu::menu::{print_menu_tree, Menu, MenuItem};
-use core::fmt::Binary;
+use crate::menu::menu::Menu;
 use embedded_graphics::mono_font::ascii::FONT_6X13_BOLD;
 use embedded_graphics::{
     mono_font::{ascii::FONT_6X10, MonoTextStyle},
     pixelcolor::BinaryColor,
     prelude::*,
-    primitives::{
-        Circle, PrimitiveStyle, PrimitiveStyleBuilder, Rectangle, StrokeAlignment, Triangle,
-    },
-    text::{Alignment, Text},
 };
 use embedded_graphics_simulator::{
     BinaryColorTheme, OutputSettingsBuilder, SimulatorDisplay, Window,
 };
+use menu::menu_item::MenuItem;
 use print_no_std::println;
 
 fn test_menu(display: &mut SimulatorDisplay<BinaryColor>) {
@@ -55,7 +51,6 @@ fn test_menu(display: &mut SimulatorDisplay<BinaryColor>) {
     let _ = menu_root.draw(display);
     let menu_tree: trees::Tree<MenuItem<BinaryColor>> = menu_root.into();
     println!("{}", menu_tree);
-    // print_menu_tree(&menu_root.into());
 }
 
 fn main() -> Result<(), core::convert::Infallible> {
