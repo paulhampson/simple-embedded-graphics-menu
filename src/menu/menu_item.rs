@@ -1,12 +1,13 @@
+use crate::menu::menu::MenuStyle;
 use core::fmt;
 use core::fmt::Formatter;
 use embedded_graphics::draw_target::DrawTarget;
-use embedded_graphics::geometry::Point;
-use embedded_graphics::mono_font::MonoTextStyle;
+use embedded_graphics::geometry::{AnchorX, Point};
 use embedded_graphics::pixelcolor::PixelColor;
-use embedded_graphics::primitives::Rectangle;
+use embedded_graphics::prelude::{DrawTargetExt, Primitive, Size};
+use embedded_graphics::primitives::{PrimitiveStyle, Rectangle, Triangle};
 use embedded_graphics::text::renderer::TextRenderer;
-use embedded_graphics::text::{Baseline, Text};
+use embedded_graphics::text::{Alignment, Baseline, Text, TextStyleBuilder};
 use embedded_graphics::Drawable;
 use embedded_layout::View;
 
@@ -26,8 +27,8 @@ where
     label: &'static str,
     item_type: MenuItemType,
     highlighted: bool,
-    character_style: MonoTextStyle<'a, C>,
     position: Point,
+    menu_style: MenuStyle<'a, C>,
 }
 
 impl<C> MenuItem<'_, C>
@@ -37,14 +38,14 @@ where
     pub const fn new<'a>(
         label: &'static str,
         item_type: MenuItemType,
-        character_style: MonoTextStyle<'a, C>,
+        menu_style: MenuStyle<'a, C>,
     ) -> MenuItem<'a, C> {
         MenuItem::<'a, C> {
             label,
             item_type,
             highlighted: false,
-            character_style,
             position: Point::zero(),
+            menu_style,
         }
     }
 
@@ -71,7 +72,8 @@ where
     }
 
     fn bounds(&self) -> Rectangle {
-        self.character_style
+        self.menu_style
+            .item_character_style
             .measure_string(self.label, Point::zero(), Baseline::Bottom)
             .bounding_box
     }
@@ -88,13 +90,78 @@ where
     where
         D: DrawTarget<Color = Self::Color>,
     {
-        let item_text = Text::with_baseline(
-            self.label,
-            self.position,
-            self.character_style,
-            Baseline::Top,
-        );
-        item_text.draw(display)?;
+        match self.item_type {
+            MenuItemType::Submenu => {
+                let indicator_vertical_pad = 2u32;
+                let indicator_right_pad = 2u32;
+                let submenu_indicator_size = Size::new(self.size().height / 2, self.size().height);
+
+                let display_size = display.bounding_box();
+                let submenu_indicator_draw_area =
+                    display_size.resized_width(submenu_indicator_size.width, AnchorX::Right);
+                let mut indicator_display = display.cropped(&submenu_indicator_draw_area);
+                let filled_style = PrimitiveStyle::with_fill(self.menu_style.indicator_fill_color);
+
+                Triangle::new(
+                    Point::new(0, indicator_vertical_pad as i32),
+                    Point::new(
+                        0,
+                        (submenu_indicator_size.height - indicator_vertical_pad) as i32,
+                    ),
+                    Point::new(
+                        (submenu_indicator_size.width - indicator_right_pad) as i32,
+                        (((submenu_indicator_size.height - indicator_vertical_pad * 2) / 2)
+                            + indicator_vertical_pad) as i32,
+                    ),
+                )
+                .into_styled(filled_style)
+                .draw(&mut indicator_display)?;
+
+                let submenu_label_draw_area = display_size.resized_width(
+                    display_size.size().width - submenu_indicator_size.width,
+                    AnchorX::Left,
+                );
+                let mut label_display = display.cropped(&submenu_label_draw_area);
+
+                Text::with_baseline(
+                    self.label,
+                    self.position,
+                    self.menu_style.item_character_style,
+                    Baseline::Top,
+                )
+                .draw(&mut label_display)?;
+            }
+            MenuItemType::Checkbox => {
+                Text::with_baseline(
+                    self.label,
+                    self.position,
+                    self.menu_style.item_character_style,
+                    Baseline::Top,
+                )
+                .draw(display)?;
+
+                Text::with_text_style(
+                    "[ ]",
+                    Point::new(display.bounding_box().size().width as i32, 0),
+                    self.menu_style.item_character_style,
+                    TextStyleBuilder::new()
+                        .alignment(Alignment::Right)
+                        .baseline(Baseline::Top)
+                        .build(),
+                )
+                .draw(display)?;
+            }
+            _ => {
+                Text::with_baseline(
+                    self.label,
+                    self.position,
+                    self.menu_style.item_character_style,
+                    Baseline::Top,
+                )
+                .draw(display)?;
+            }
+        }
+
         Ok(())
     }
 }
