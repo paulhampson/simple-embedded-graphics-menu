@@ -12,7 +12,7 @@ use embedded_layout::View;
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum MenuItemType {
-    Heading,
+    Section,
     Checkbox,
     Selector,
     Submenu,

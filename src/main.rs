@@ -20,31 +20,18 @@ use menu::menu_item::MenuItem;
 use print_no_std::println;
 
 fn test_menu(display: &mut SimulatorDisplay<BinaryColor>) {
-    let display_size = display.size();
     let heading_style = MonoTextStyle::new(&FONT_6X13_BOLD, BinaryColor::On);
     let item_style = MonoTextStyle::new(&FONT_6X10, BinaryColor::On);
 
-    let mut menu_root = Menu::new("M1", Point::zero(), display_size, heading_style, item_style);
+    let mut menu_root = Menu::new("M1", heading_style, item_style);
     menu_root.add_checkbox("M1 Check 1");
     menu_root.add_selector("M1 Selector 1");
 
-    let mut sm = Menu::new(
-        "M1-1",
-        Point::zero(),
-        display_size,
-        heading_style,
-        item_style,
-    );
+    let mut sm = Menu::new("M1-1", heading_style, item_style);
     sm.add_checkbox("M1-1 Check 1");
     menu_root.add_submenu(sm);
 
-    let mut sm = Menu::new(
-        "M1-2",
-        Point::zero(),
-        display_size,
-        heading_style,
-        item_style,
-    );
+    let mut sm = Menu::new("M1-2", heading_style, item_style);
     sm.add_checkbox("M1-2 Check 1");
     menu_root.add_submenu(sm);
 
