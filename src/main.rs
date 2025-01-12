@@ -6,13 +6,13 @@
 
 mod menu;
 
+use crate::menu::items::MenuItems;
 use crate::menu::{Menu, MenuStyle};
 use embedded_graphics::mono_font::ascii::{FONT_6X10, FONT_7X13_BOLD};
 use embedded_graphics::{mono_font::MonoTextStyle, pixelcolor::BinaryColor, prelude::*};
 use embedded_graphics_simulator::{
     BinaryColorTheme, OutputSettingsBuilder, SimulatorDisplay, Window,
 };
-use menu::menu_item::MenuItem;
 use print_no_std::println;
 
 fn test_menu(display: &mut SimulatorDisplay<BinaryColor>) {
@@ -30,9 +30,11 @@ fn test_menu(display: &mut SimulatorDisplay<BinaryColor>) {
 
     let mut menu_root = Menu::new("M1 Heading", menu_style);
     menu_root.add_checkbox("M1 Check 1");
-    menu_root.add_selector("M1 Selector 1");
+    let options = &["a", "b", "c"];
+    menu_root.add_selector("M1 Selector 1", options);
+    menu_root.add_section("Section 1");
 
-    let mut sm = Menu::new("M1-1", menu_style);
+    let mut sm = Menu::new("M1-1 aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", menu_style);
     sm.add_checkbox("M1-1 Check 1");
     menu_root.add_submenu(sm);
 
@@ -41,12 +43,14 @@ fn test_menu(display: &mut SimulatorDisplay<BinaryColor>) {
     menu_root.add_submenu(sm);
 
     menu_root.add_checkbox("M1 Check 2");
-    menu_root.add_selector("M1 Selector 2");
-    menu_root.add_selector("M1 Selector 3");
+    let options = &["c", "d", "e"];
+    menu_root.add_selector("M1 Selector 2", options);
+    let options = &["f", "g", "h"];
+    menu_root.add_selector("M1 Selector 3", options);
 
     let _ = menu_root.draw(display);
-    let menu_tree: trees::Tree<MenuItem<BinaryColor>> = menu_root.into();
-    println!("{}", menu_tree);
+    let menu_tree: trees::Tree<MenuItems<BinaryColor>> = menu_root.into();
+    println!("{:?}", menu_tree);
 }
 
 fn main() -> Result<(), core::convert::Infallible> {

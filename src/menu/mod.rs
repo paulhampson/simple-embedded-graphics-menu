@@ -1,8 +1,13 @@
 #![no_std]
 
-pub mod menu_item;
+use crate::menu::items::MenuItem;
+pub mod items;
 
-use crate::menu::menu_item::{MenuItem, MenuItemType};
+use crate::menu::items::checkbox::CheckboxItem;
+use crate::menu::items::multi_option::MultiOptionItem;
+use crate::menu::items::section::SectionItem;
+use crate::menu::items::submenu::SubmenuItem;
+use crate::menu::items::MenuItems;
 use embedded_graphics::geometry::AnchorY;
 use embedded_graphics::mono_font::MonoTextStyle;
 use embedded_graphics::prelude::*;
@@ -15,7 +20,7 @@ pub struct Menu<'a, C>
 where
     C: PixelColor,
 {
-    menu_tree: Tree<MenuItem<'a, C>>,
+    menu_tree: Tree<MenuItems<'a, C>>,
     menu_style: MenuStyle<'a, C>,
 }
 
@@ -25,32 +30,36 @@ where
 {
     pub fn new(label: &'static str, menu_style: MenuStyle<'a, C>) -> Self {
         Self {
-            menu_tree: Tree::new(MenuItem::new(label, MenuItemType::Submenu, menu_style)),
+            menu_tree: Tree::new(MenuItems::Submenu(SubmenuItem::new(label, menu_style))),
             menu_style,
         }
     }
 
     /// Add menu item to the menu structure that will be drawn
-    pub fn add_item(&mut self, item: MenuItem<'a, C>) {
+    pub fn add_item(&mut self, item: MenuItems<'a, C>) {
         self.menu_tree.push_back(Tree::new(item));
     }
 
     /// Add checkbox as next item in the menu
     pub fn add_checkbox(&mut self, label: &'static str) {
-        let item = MenuItem::new(label, MenuItemType::Checkbox, self.menu_style);
-        self.add_item(item);
+        self.add_item(MenuItems::Checkbox(CheckboxItem::new(
+            label,
+            self.menu_style,
+        )));
     }
 
     /// Add selector as next item in the menu
-    pub fn add_selector(&mut self, label: &'static str) {
-        let item = MenuItem::new(label, MenuItemType::Selector, self.menu_style);
-        self.add_item(item);
+    pub fn add_selector(&mut self, label: &'static str, options: &'a [&'static str]) {
+        self.add_item(MenuItems::Selector(MultiOptionItem::new(
+            label,
+            self.menu_style,
+            options,
+        )));
     }
 
     /// Add section (non-selectable item) as next item in the menu
     pub fn add_section(&mut self, label: &'static str) {
-        let item = MenuItem::new(label, MenuItemType::Section, self.menu_style);
-        self.add_item(item);
+        self.add_item(MenuItems::Section(SectionItem::new(label, self.menu_style)));
     }
 
     /// Add a sub-menu to the menu structure that will be drawn
@@ -103,11 +112,11 @@ where
     }
 }
 
-impl<'a, C> From<Menu<'a, C>> for Tree<MenuItem<'a, C>>
+impl<'a, C> From<Menu<'a, C>> for Tree<MenuItems<'a, C>>
 where
     C: PixelColor,
 {
-    fn from(menu: Menu<'a, C>) -> Tree<MenuItem<'a, C>> {
+    fn from(menu: Menu<'a, C>) -> Tree<MenuItems<'a, C>> {
         menu.menu_tree
     }
 }
