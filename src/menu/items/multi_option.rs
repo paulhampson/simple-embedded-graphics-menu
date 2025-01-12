@@ -1,4 +1,4 @@
-use crate::menu::items::{MenuItem, MenuItemData};
+use crate::menu::items::{MenuItem, MenuItemData, MenuItemWithData};
 use crate::menu::MenuStyle;
 use core::fmt;
 use core::fmt::{Debug, Display, Formatter};
@@ -43,6 +43,8 @@ where
         }
     }
 }
+
+impl<C> MenuItemWithData for MultiOptionItem<'_, C> where C: PixelColor {}
 
 impl<C: PixelColor> Debug for MultiOptionItem<'_, C> {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
@@ -109,12 +111,14 @@ where
     }
 }
 
-impl<C> MenuItemData<usize> for MultiOptionItem<'_, C>
+impl<C> MenuItemData for MultiOptionItem<'_, C>
 where
     C: PixelColor,
 {
-    fn selected(&mut self) -> usize {
-        self.current_option_index = self.current_option_index % self.options.len();
+    type MenuItemDataType = usize;
+
+    fn selected(&mut self) -> Self::MenuItemDataType {
+        self.current_option_index %= self.options.len();
         self.current_option_index
     }
 

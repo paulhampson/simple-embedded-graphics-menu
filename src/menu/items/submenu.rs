@@ -1,3 +1,4 @@
+use crate::menu::items::{MenuItem, MenuItemData, MenuItemWithData};
 use crate::menu::MenuStyle;
 use core::fmt;
 use core::fmt::{Debug, Display, Formatter};
@@ -39,6 +40,30 @@ where
         self.label
     }
 }
+
+impl<C> MenuItem for SubmenuItem<'_, C>
+where
+    C: PixelColor,
+{
+    fn label(&self) -> &'static str {
+        self.label
+    }
+}
+
+impl<C> MenuItemData for SubmenuItem<'_, C>
+where
+    C: PixelColor,
+{
+    type MenuItemDataType = ();
+
+    fn selected(&mut self) -> Self::MenuItemDataType {}
+
+    fn display_string(&self) -> &str {
+        self.label()
+    }
+}
+
+impl<C> MenuItemWithData for SubmenuItem<'_, C> where C: PixelColor {}
 
 impl<C> Debug for SubmenuItem<'_, C>
 where

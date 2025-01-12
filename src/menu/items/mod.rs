@@ -15,6 +15,20 @@ pub mod multi_option;
 pub mod section;
 pub mod submenu;
 
+pub trait MenuItem: View + Drawable + Display {
+    fn label(&self) -> &'static str;
+}
+
+pub trait MenuItemWithData: MenuItem + MenuItemData {}
+
+pub trait MenuItemData {
+    type MenuItemDataType;
+
+    fn selected(&mut self) -> Self::MenuItemDataType;
+
+    fn display_string(&self) -> &str;
+}
+
 #[derive(Debug, Clone, Copy)]
 pub enum MenuItems<'a, C>
 where
@@ -26,7 +40,7 @@ where
     Section(SectionItem<'a, C>),
 }
 
-impl<'a, C> View for MenuItems<'a, C>
+impl<C> View for MenuItems<'_, C>
 where
     C: PixelColor,
 {
@@ -49,7 +63,7 @@ where
     }
 }
 
-impl<'a, C> Display for MenuItems<'a, C>
+impl<C> Display for MenuItems<'_, C>
 where
     C: PixelColor,
 {
@@ -63,7 +77,7 @@ where
     }
 }
 
-impl<'a, C> MenuItem for MenuItems<'a, C>
+impl<C> MenuItem for MenuItems<'_, C>
 where
     C: PixelColor,
 {
@@ -77,7 +91,7 @@ where
     }
 }
 
-impl<'a, C> Drawable for MenuItems<'a, C>
+impl<C> Drawable for MenuItems<'_, C>
 where
     C: PixelColor,
 {
@@ -95,14 +109,4 @@ where
             MenuItems::Section(item) => item.draw(display),
         }
     }
-}
-
-pub trait MenuItem: View + Drawable + Display {
-    fn label(&self) -> &'static str;
-}
-
-pub trait MenuItemData<T> {
-    fn selected(&mut self) -> T;
-
-    fn display_string(&self) -> &str;
 }

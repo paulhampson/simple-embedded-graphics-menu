@@ -1,4 +1,4 @@
-use crate::menu::items::{MenuItem, MenuItemData};
+use crate::menu::items::{MenuItem, MenuItemData, MenuItemWithData};
 use crate::menu::MenuStyle;
 use core::fmt;
 use core::fmt::{Debug, Display, Formatter};
@@ -37,6 +37,8 @@ where
         }
     }
 }
+
+impl<C> MenuItemWithData for CheckboxItem<'_, C> where C: PixelColor {}
 
 impl<C: PixelColor> Debug for CheckboxItem<'_, C> {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
@@ -103,11 +105,13 @@ where
     }
 }
 
-impl<C> MenuItemData<bool> for CheckboxItem<'_, C>
+impl<C> MenuItemData for CheckboxItem<'_, C>
 where
     C: PixelColor,
 {
-    fn selected(&mut self) -> bool {
+    type MenuItemDataType = bool;
+
+    fn selected(&mut self) -> Self::MenuItemDataType {
         self.checkbox_state = !self.checkbox_state;
         self.checkbox_state
     }

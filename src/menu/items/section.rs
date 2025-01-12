@@ -1,4 +1,4 @@
-use crate::menu::items::MenuItem;
+use crate::menu::items::{MenuItem, MenuItemData, MenuItemWithData};
 use crate::menu::MenuStyle;
 use core::fmt;
 use core::fmt::{Debug, Display, Formatter};
@@ -35,6 +35,8 @@ where
         }
     }
 }
+
+impl<C> MenuItemWithData for SectionItem<'_, C> where C: PixelColor {}
 
 impl<C: PixelColor> Debug for SectionItem<'_, C> {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
@@ -81,6 +83,19 @@ impl<C: PixelColor> Drawable for SectionItem<'_, C> {
         .draw(display)?;
 
         Ok(())
+    }
+}
+
+impl<C> MenuItemData for SectionItem<'_, C>
+where
+    C: PixelColor,
+{
+    type MenuItemDataType = ();
+
+    fn selected(&mut self) -> Self::MenuItemDataType {}
+
+    fn display_string(&self) -> &str {
+        self.label()
     }
 }
 
