@@ -1,4 +1,4 @@
-use crate::menu::items::{DrawableHighlighted, MenuItem, MenuItemData, MenuItemWithData};
+use crate::menu::items::{DrawableHighlighted, MenuItem, MenuItemData, SelectedData};
 use crate::menu::MenuStyle;
 use core::fmt;
 use core::fmt::{Debug, Display, Formatter};
@@ -18,7 +18,6 @@ where
     C: PixelColor,
 {
     label: &'static str,
-    highlighted: bool,
     position: Point,
     menu_style: MenuStyle<'a, C>,
     checkbox_state: bool,
@@ -29,17 +28,24 @@ where
     C: PixelColor,
 {
     pub const fn new<'a>(label: &'static str, menu_style: MenuStyle<'a, C>) -> CheckboxItem<'a, C> {
+        let initial_state = false;
         CheckboxItem {
             label,
-            highlighted: false,
             position: Point::zero(),
             menu_style,
-            checkbox_state: false,
+            checkbox_state: initial_state,
         }
     }
 }
 
-impl<C> MenuItemWithData for CheckboxItem<'_, C> where C: PixelColor {}
+impl<C> MenuItem for CheckboxItem<'_, C>
+where
+    C: PixelColor,
+{
+    fn label(&self) -> &'static str {
+        self.label
+    }
+}
 
 impl<C: PixelColor> Debug for CheckboxItem<'_, C> {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
@@ -142,24 +148,13 @@ impl<C: PixelColor> DrawableHighlighted for CheckboxItem<'_, C> {
     }
 }
 
-impl<C> MenuItem for CheckboxItem<'_, C>
-where
-    C: PixelColor,
-{
-    fn label(&self) -> &'static str {
-        self.label
-    }
-}
-
 impl<C> MenuItemData for CheckboxItem<'_, C>
 where
     C: PixelColor,
 {
-    type MenuItemDataType = bool;
-
-    fn selected(&mut self) -> Self::MenuItemDataType {
+    fn selected(&mut self) -> SelectedData {
         self.checkbox_state = !self.checkbox_state;
-        self.checkbox_state
+        SelectedData::Checkbox(self.checkbox_state)
     }
 
     fn display_string(&self) -> &str {

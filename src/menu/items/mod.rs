@@ -15,11 +15,17 @@ pub mod multi_option;
 pub mod section;
 pub mod submenu;
 
-pub trait MenuItem: View + Drawable + DrawableHighlighted + Display {
-    fn label(&self) -> &'static str;
+#[derive(Clone, Copy, PartialEq)]
+pub enum SelectedData {
+    Checkbox(bool),
+    Submenu(),
+    MultiOption(usize),
+    Section(),
 }
 
-pub trait MenuItemWithData: MenuItem + MenuItemData {}
+pub trait MenuItem: View + Drawable + DrawableHighlighted + Display + MenuItemData {
+    fn label(&self) -> &'static str;
+}
 
 pub trait DrawableHighlighted {
     type Color: PixelColor;
@@ -31,9 +37,7 @@ pub trait DrawableHighlighted {
 }
 
 pub trait MenuItemData {
-    type MenuItemDataType;
-
-    fn selected(&mut self) -> Self::MenuItemDataType;
+    fn selected(&mut self) -> SelectedData;
 
     fn display_string(&self) -> &str;
 }
@@ -82,6 +86,29 @@ where
             MenuItems::Submenu(item) => Display::fmt(&item, f),
             MenuItems::Selector(item) => Display::fmt(&item, f),
             MenuItems::Section(item) => Display::fmt(&item, f),
+        }
+    }
+}
+
+impl<C> MenuItemData for MenuItems<'_, C>
+where
+    C: PixelColor,
+{
+    fn selected(&mut self) -> SelectedData {
+        match self {
+            MenuItems::Checkbox(item) => item.selected(),
+            MenuItems::Submenu(item) => item.selected(),
+            MenuItems::Selector(item) => item.selected(),
+            MenuItems::Section(item) => item.selected(),
+        }
+    }
+
+    fn display_string(&self) -> &str {
+        match self {
+            MenuItems::Checkbox(item) => item.display_string(),
+            MenuItems::Submenu(item) => item.display_string(),
+            MenuItems::Selector(item) => item.display_string(),
+            MenuItems::Section(item) => item.display_string(),
         }
     }
 }

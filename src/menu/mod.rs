@@ -1,6 +1,8 @@
 #![no_std]
 
-use crate::menu::items::{DrawableHighlighted, MenuItem};
+use crate::menu::items::{DrawableHighlighted, MenuItem, MenuItemData};
+use core::pin::Pin;
+
 pub mod items;
 
 use crate::menu::items::checkbox::CheckboxItem;
@@ -99,7 +101,20 @@ where
         }
     }
 
-    pub fn select_item(&mut self) {}
+    pub fn select_item(&mut self) {
+        if let Some(item) = self
+            .menu_tree_root
+            .iter_mut()
+            .nth(self.menu_state.highlighted_item())
+        {
+            // Is there some better way to do this? Behaviour doesn't seem to match the tree crate
+            // examples, but they use simple types
+            unsafe {
+                let item = Pin::into_inner_unchecked(item);
+                item.data_mut().selected();
+            }
+        }
+    }
 }
 
 impl<C> Drawable for Menu<'_, C>

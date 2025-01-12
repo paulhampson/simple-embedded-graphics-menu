@@ -1,4 +1,4 @@
-use crate::menu::items::{DrawableHighlighted, MenuItem, MenuItemData, MenuItemWithData};
+use crate::menu::items::{DrawableHighlighted, MenuItem, MenuItemData, SelectedData};
 use crate::menu::MenuStyle;
 use core::fmt;
 use core::fmt::{Debug, Display, Formatter};
@@ -102,16 +102,14 @@ impl<C> MenuItemData for SubmenuItem<'_, C>
 where
     C: PixelColor,
 {
-    type MenuItemDataType = ();
-
-    fn selected(&mut self) -> Self::MenuItemDataType {}
+    fn selected(&mut self) -> SelectedData {
+        SelectedData::Submenu()
+    }
 
     fn display_string(&self) -> &str {
         self.label()
     }
 }
-
-impl<C> MenuItemWithData for SubmenuItem<'_, C> where C: PixelColor {}
 
 impl<C> Debug for SubmenuItem<'_, C>
 where

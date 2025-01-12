@@ -54,7 +54,6 @@ fn build_menu<'a>() -> Menu<'a, BinaryColor> {
 }
 
 fn main() -> Result<(), core::convert::Infallible> {
-    // Create a new simulator display with 128x64 pixels.
     let mut display: SimulatorDisplay<BinaryColor> = SimulatorDisplay::new(Size::new(128, 64));
 
     let mut menu = build_menu();

@@ -1,4 +1,4 @@
-use crate::menu::items::{DrawableHighlighted, MenuItem, MenuItemData, MenuItemWithData};
+use crate::menu::items::{DrawableHighlighted, MenuItem, MenuItemData, SelectedData};
 use crate::menu::MenuStyle;
 use core::fmt;
 use core::fmt::{Debug, Display, Formatter};
@@ -34,18 +34,26 @@ where
         menu_style: MenuStyle<'a, C>,
         options: &'a [&'static str],
     ) -> MultiOptionItem<'a, C> {
+        let initial_index = 0;
         MultiOptionItem {
             label,
             highlighted: false,
             position: Point::zero(),
             menu_style,
-            current_option_index: 0,
+            current_option_index: initial_index,
             options,
         }
     }
 }
 
-impl<C> MenuItemWithData for MultiOptionItem<'_, C> where C: PixelColor {}
+impl<C> MenuItem for MultiOptionItem<'_, C>
+where
+    C: PixelColor,
+{
+    fn label(&self) -> &'static str {
+        self.label
+    }
+}
 
 impl<C: PixelColor> Debug for MultiOptionItem<'_, C> {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
@@ -148,24 +156,16 @@ impl<C: PixelColor> DrawableHighlighted for MultiOptionItem<'_, C> {
     }
 }
 
-impl<C> MenuItem for MultiOptionItem<'_, C>
-where
-    C: PixelColor,
-{
-    fn label(&self) -> &'static str {
-        self.label
-    }
-}
-
 impl<C> MenuItemData for MultiOptionItem<'_, C>
 where
     C: PixelColor,
 {
-    type MenuItemDataType = usize;
-
-    fn selected(&mut self) -> Self::MenuItemDataType {
-        self.current_option_index %= self.options.len();
-        self.current_option_index
+    fn selected(&mut self) -> SelectedData {
+        self.current_option_index += 1;
+        if self.current_option_index >= self.options.len() {
+            self.current_option_index = 0;
+        }
+        SelectedData::MultiOption(self.current_option_index)
     }
 
     fn display_string(&self) -> &str {
