@@ -1,5 +1,5 @@
 [package]
-name = "rust_embedded_gfx_sim"
+name = "embedded_gfx_menu_dev"
 version = "0.1.0"
 edition = "2021"
 
