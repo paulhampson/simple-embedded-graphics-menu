@@ -1,6 +1,6 @@
 #![no_std]
 
-use crate::menu::items::MenuItem;
+use crate::menu::items::{DrawableHighlighted, MenuItem};
 pub mod items;
 
 use crate::menu::items::checkbox::CheckboxItem;
@@ -75,10 +75,28 @@ where
 
     pub fn navigate_down(&mut self) {
         self.menu_state.move_down();
+        if let Some(item) = self
+            .menu_tree_root
+            .iter()
+            .nth(self.menu_state.highlighted_item())
+        {
+            if let MenuItems::Section(_) = item.data() {
+                self.menu_state.move_down();
+            }
+        }
     }
 
     pub fn navigate_up(&mut self) {
         self.menu_state.move_up();
+        if let Some(item) = self
+            .menu_tree_root
+            .iter()
+            .nth(self.menu_state.highlighted_item())
+        {
+            if let MenuItems::Section(_) = item.data() {
+                self.menu_state.move_up();
+            }
+        }
     }
 
     pub fn select_item(&mut self) {}
@@ -110,19 +128,29 @@ where
         let mut remaining_item_area = display_area
             .resized_height(display_area.size().height - header_height, AnchorY::Bottom);
 
-        let menu_iter = self
-            .menu_tree_root
-            .iter()
-            .skip(self.menu_state.highlighted_item());
+        let mut skip_count = 0;
 
-        for menu_item in menu_iter {
+        if self.menu_state.highlighted_item() > 1 {
+            skip_count = self.menu_state.highlighted_item() - 1;
+        }
+        if self.menu_state.highlighted_item() == self.menu_state.item_count() {
+            skip_count = self.menu_state.highlighted_item() - 2;
+        }
+
+        let menu_iter = self.menu_tree_root.iter().skip(skip_count);
+
+        for (id, menu_item) in menu_iter.enumerate() {
             let item_height = menu_item.data().size().height;
             if item_height > remaining_item_area.size().height {
                 break;
             }
 
             let mut item_display = display.cropped(&remaining_item_area);
-            menu_item.data().draw(&mut item_display)?;
+            if id + skip_count == self.menu_state.highlighted_item() {
+                menu_item.data().draw_highlighted(&mut item_display)?;
+            } else {
+                menu_item.data().draw(&mut item_display)?;
+            }
 
             remaining_item_area = remaining_item_area.resized_height(
                 remaining_item_area.size().height - item_height,
@@ -151,6 +179,7 @@ pub struct MenuStyle<'a, C> {
     pub(crate) indicator_fill_color: C,
     pub(crate) highlight_item_color: C,
     pub(crate) highlight_text_style: MonoTextStyle<'a, C>,
+    pub(crate) highlight_indicator_fill_color: C,
 }
 
 impl<'a, C> MenuStyle<'a, C>
@@ -164,6 +193,7 @@ where
         indicator_fill_color: C,
         highlight_item_color: C,
         highlight_text_style: MonoTextStyle<'a, C>,
+        highlight_indicator_fill_color: C,
     ) -> Self {
         Self {
             menu_background_color,
@@ -172,6 +202,7 @@ where
             indicator_fill_color,
             highlight_item_color,
             highlight_text_style,
+            highlight_indicator_fill_color,
         }
     }
 }
@@ -193,7 +224,7 @@ impl MenuState {
     }
     pub fn move_down(&mut self) {
         self.highlighted_item += 1;
-        if self.highlighted_item > self.item_count {
+        if self.highlighted_item >= self.item_count {
             self.highlighted_item = 0;
         }
     }
@@ -208,5 +239,9 @@ impl MenuState {
 
     pub fn highlighted_item(&self) -> usize {
         self.highlighted_item
+    }
+
+    pub fn item_count(&self) -> usize {
+        self.item_count
     }
 }

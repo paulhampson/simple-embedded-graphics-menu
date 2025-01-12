@@ -1,11 +1,12 @@
-use crate::menu::items::{MenuItem, MenuItemData, MenuItemWithData};
+use crate::menu::items::{DrawableHighlighted, MenuItem, MenuItemData, MenuItemWithData};
 use crate::menu::MenuStyle;
 use core::fmt;
 use core::fmt::{Debug, Display, Formatter};
 use embedded_graphics::draw_target::DrawTarget;
 use embedded_graphics::geometry::Point;
 use embedded_graphics::pixelcolor::PixelColor;
-use embedded_graphics::primitives::Rectangle;
+use embedded_graphics::prelude::{Primitive, Size};
+use embedded_graphics::primitives::{PrimitiveStyleBuilder, Rectangle};
 use embedded_graphics::text::renderer::TextRenderer;
 use embedded_graphics::text::{Alignment, Baseline, Text, TextStyleBuilder};
 use embedded_graphics::Drawable;
@@ -91,6 +92,51 @@ impl<C: PixelColor> Drawable for MultiOptionItem<'_, C> {
             self.display_string(),
             Point::new(display.bounding_box().size().width as i32, 0),
             self.menu_style.item_character_style,
+            TextStyleBuilder::new()
+                .alignment(Alignment::Right)
+                .baseline(Baseline::Top)
+                .build(),
+        )
+        .draw(display)?;
+
+        Ok(())
+    }
+}
+
+impl<C: PixelColor> DrawableHighlighted for MultiOptionItem<'_, C> {
+    type Color = C;
+    type Output = ();
+
+    fn draw_highlighted<D>(&self, display: &mut D) -> Result<Self::Output, D::Error>
+    where
+        D: DrawTarget<Color = Self::Color>,
+    {
+        let highlight_box_style = PrimitiveStyleBuilder::new()
+            .fill_color(self.menu_style.highlight_item_color)
+            .build();
+
+        Rectangle::new(
+            self.position,
+            Size::new(
+                display.bounding_box().size().width,
+                self.menu_style.highlight_text_style.line_height(),
+            ),
+        )
+        .into_styled(highlight_box_style)
+        .draw(display)?;
+
+        Text::with_baseline(
+            self.label,
+            self.position,
+            self.menu_style.highlight_text_style,
+            Baseline::Top,
+        )
+        .draw(display)?;
+
+        Text::with_text_style(
+            self.display_string(),
+            Point::new(display.bounding_box().size().width as i32, 0),
+            self.menu_style.highlight_text_style,
             TextStyleBuilder::new()
                 .alignment(Alignment::Right)
                 .baseline(Baseline::Top)

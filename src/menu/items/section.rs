@@ -1,4 +1,4 @@
-use crate::menu::items::{MenuItem, MenuItemData, MenuItemWithData};
+use crate::menu::items::{DrawableHighlighted, MenuItem, MenuItemData, MenuItemWithData};
 use crate::menu::MenuStyle;
 use core::fmt;
 use core::fmt::{Debug, Display, Formatter};
@@ -82,6 +82,18 @@ impl<C: PixelColor> Drawable for SectionItem<'_, C> {
         )
         .draw(display)?;
 
+        Ok(())
+    }
+}
+
+impl<C: PixelColor> DrawableHighlighted for SectionItem<'_, C> {
+    type Color = C;
+    type Output = ();
+
+    fn draw_highlighted<D>(&self, _display: &mut D) -> Result<Self::Output, D::Error>
+    where
+        D: DrawTarget<Color = Self::Color>,
+    {
         Ok(())
     }
 }

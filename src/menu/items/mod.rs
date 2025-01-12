@@ -15,11 +15,20 @@ pub mod multi_option;
 pub mod section;
 pub mod submenu;
 
-pub trait MenuItem: View + Drawable + Display {
+pub trait MenuItem: View + Drawable + DrawableHighlighted + Display {
     fn label(&self) -> &'static str;
 }
 
 pub trait MenuItemWithData: MenuItem + MenuItemData {}
+
+pub trait DrawableHighlighted {
+    type Color: PixelColor;
+    type Output;
+
+    fn draw_highlighted<D>(&self, target: &mut D) -> Result<Self::Output, D::Error>
+    where
+        D: DrawTarget<Color = Self::Color>;
+}
 
 pub trait MenuItemData {
     type MenuItemDataType;
@@ -107,6 +116,23 @@ where
             MenuItems::Submenu(item) => item.draw(display),
             MenuItems::Selector(item) => item.draw(display),
             MenuItems::Section(item) => item.draw(display),
+        }
+    }
+}
+
+impl<C: PixelColor> DrawableHighlighted for MenuItems<'_, C> {
+    type Color = C;
+    type Output = ();
+
+    fn draw_highlighted<D>(&self, display: &mut D) -> Result<Self::Output, D::Error>
+    where
+        D: DrawTarget<Color = Self::Color>,
+    {
+        match self {
+            MenuItems::Checkbox(item) => item.draw_highlighted(display),
+            MenuItems::Submenu(item) => item.draw_highlighted(display),
+            MenuItems::Selector(item) => item.draw_highlighted(display),
+            MenuItems::Section(item) => item.draw_highlighted(display),
         }
     }
 }
