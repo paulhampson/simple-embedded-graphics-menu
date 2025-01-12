@@ -20,8 +20,9 @@ pub struct Menu<'a, C>
 where
     C: PixelColor,
 {
-    menu_tree: Tree<MenuItems<'a, C>>,
+    menu_tree_root: Tree<MenuItems<'a, C>>,
     menu_style: MenuStyle<'a, C>,
+    menu_state: MenuState,
 }
 
 impl<'a, C> Menu<'a, C>
@@ -30,14 +31,17 @@ where
 {
     pub fn new(label: &'static str, menu_style: MenuStyle<'a, C>) -> Self {
         Self {
-            menu_tree: Tree::new(MenuItems::Submenu(SubmenuItem::new(label, menu_style))),
+            menu_tree_root: Tree::new(MenuItems::Submenu(SubmenuItem::new(label, menu_style))),
             menu_style,
+            menu_state: MenuState::new(),
         }
     }
 
     /// Add menu item to the menu structure that will be drawn
     pub fn add_item(&mut self, item: MenuItems<'a, C>) {
-        self.menu_tree.push_back(Tree::new(item));
+        self.menu_tree_root.push_back(Tree::new(item));
+        self.menu_state
+            .update_item_count(self.menu_tree_root.iter().count());
     }
 
     /// Add checkbox as next item in the menu
@@ -64,8 +68,20 @@ where
 
     /// Add a sub-menu to the menu structure that will be drawn
     pub fn add_submenu(&mut self, submenu: Menu<'a, C>) {
-        self.menu_tree.push_back(submenu.into());
+        self.menu_tree_root.push_back(submenu.into());
+        self.menu_state
+            .update_item_count(self.menu_tree_root.iter().count());
     }
+
+    pub fn navigate_down(&mut self) {
+        self.menu_state.move_down();
+    }
+
+    pub fn navigate_up(&mut self) {
+        self.menu_state.move_up();
+    }
+
+    pub fn select_item(&mut self) {}
 }
 
 impl<C> Drawable for Menu<'_, C>
@@ -80,7 +96,8 @@ where
         D: DrawTarget<Color = Self::Color>,
     {
         let display_area = display.bounding_box();
-        let header = self.menu_tree.data();
+        display.clear(self.menu_style.menu_background_color)?;
+        let header = self.menu_tree_root.data();
         let header_height = self.menu_style.heading_character_style.line_height();
         Text::with_baseline(
             header.label(),
@@ -93,7 +110,12 @@ where
         let mut remaining_item_area = display_area
             .resized_height(display_area.size().height - header_height, AnchorY::Bottom);
 
-        for menu_item in self.menu_tree.iter() {
+        let menu_iter = self
+            .menu_tree_root
+            .iter()
+            .skip(self.menu_state.highlighted_item());
+
+        for menu_item in menu_iter {
             let item_height = menu_item.data().size().height;
             if item_height > remaining_item_area.size().height {
                 break;
@@ -117,12 +139,13 @@ where
     C: PixelColor,
 {
     fn from(menu: Menu<'a, C>) -> Tree<MenuItems<'a, C>> {
-        menu.menu_tree
+        menu.menu_tree_root
     }
 }
 
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub struct MenuStyle<'a, C> {
+    pub(crate) menu_background_color: C,
     pub(crate) heading_character_style: MonoTextStyle<'a, C>,
     pub(crate) item_character_style: MonoTextStyle<'a, C>,
     pub(crate) indicator_fill_color: C,
@@ -135,6 +158,7 @@ where
     C: PixelColor,
 {
     pub fn new(
+        menu_background_color: C,
         heading_character_style: MonoTextStyle<'a, C>,
         item_character_style: MonoTextStyle<'a, C>,
         indicator_fill_color: C,
@@ -142,11 +166,47 @@ where
         highlight_text_style: MonoTextStyle<'a, C>,
     ) -> Self {
         Self {
+            menu_background_color,
             heading_character_style,
             item_character_style,
             indicator_fill_color,
             highlight_item_color,
             highlight_text_style,
         }
+    }
+}
+
+struct MenuState {
+    highlighted_item: usize,
+    item_count: usize,
+}
+
+impl MenuState {
+    pub fn new() -> Self {
+        Self {
+            highlighted_item: 0,
+            item_count: 0,
+        }
+    }
+    pub fn update_item_count(&mut self, item_count: usize) {
+        self.item_count = item_count;
+    }
+    pub fn move_down(&mut self) {
+        self.highlighted_item += 1;
+        if self.highlighted_item > self.item_count {
+            self.highlighted_item = 0;
+        }
+    }
+
+    pub fn move_up(&mut self) {
+        if self.highlighted_item == 0 {
+            self.highlighted_item = self.item_count - 1;
+        } else {
+            self.highlighted_item -= 1;
+        }
+    }
+
+    pub fn highlighted_item(&self) -> usize {
+        self.highlighted_item
     }
 }
