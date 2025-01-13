@@ -41,6 +41,8 @@ fn build_menu<'a>() -> Menu<'a, BinaryColor> {
 
     let mut sm = Menu::new("M1-2", menu_style);
     sm.add_checkbox("M1-2 Check 1");
+    let options = &["m1-2c", "m1-2d", "m1-2e"];
+    sm.add_selector("M1-2 Selector 1", options);
     menu_root.add_submenu(sm);
 
     menu_root.add_section("Section 2");

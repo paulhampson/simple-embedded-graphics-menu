@@ -42,7 +42,7 @@ pub trait MenuItemData {
     fn display_string(&self) -> &str;
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum MenuItems<'a, C>
 where
     C: PixelColor,

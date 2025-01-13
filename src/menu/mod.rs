@@ -1,6 +1,6 @@
 #![no_std]
 
-use crate::menu::items::{DrawableHighlighted, MenuItem, MenuItemData};
+use crate::menu::items::{DrawableHighlighted, MenuItem, MenuItemData, SelectedData};
 use core::pin::Pin;
 
 pub mod items;
@@ -25,6 +25,7 @@ where
     menu_tree_root: Tree<MenuItems<'a, C>>,
     menu_style: MenuStyle<'a, C>,
     menu_state: MenuState,
+    active_submenu_tree: Option<Tree<MenuItems<'a, C>>>,
 }
 
 impl<'a, C> Menu<'a, C>
@@ -32,10 +33,12 @@ where
     C: PixelColor,
 {
     pub fn new(label: &'static str, menu_style: MenuStyle<'a, C>) -> Self {
+        let tree_root = Tree::new(MenuItems::Submenu(SubmenuItem::new(label, menu_style)));
         Self {
-            menu_tree_root: Tree::new(MenuItems::Submenu(SubmenuItem::new(label, menu_style))),
+            menu_tree_root: tree_root,
             menu_style,
             menu_state: MenuState::new(),
+            active_submenu_tree: None,
         }
     }
 
@@ -101,36 +104,58 @@ where
         }
     }
 
+    fn get_mut_active_tree(&mut self) -> &mut Tree<MenuItems<'a, C>> {
+        let menu_tree: &mut Tree<MenuItems<'_, C>>;
+        if let Some(active_tree) = self.active_submenu_tree.as_mut() {
+            menu_tree = active_tree;
+        } else {
+            menu_tree = &mut self.menu_tree_root;
+        }
+        menu_tree
+    }
+
+    fn get_active_tree(&self) -> &Tree<MenuItems<'a, C>> {
+        let menu_tree: &Tree<MenuItems<'_, C>>;
+        if let Some(active_tree) = &self.active_submenu_tree {
+            menu_tree = active_tree;
+        } else {
+            menu_tree = &self.menu_tree_root;
+        }
+        menu_tree
+    }
+
     pub fn select_item(&mut self) {
-        if let Some(item) = self
-            .menu_tree_root
-            .iter_mut()
-            .nth(self.menu_state.highlighted_item())
-        {
+        let highlighted_item = self.menu_state.highlighted_item();
+        if let Some(item) = self.get_mut_active_tree().iter_mut().nth(highlighted_item) {
+            let selection_result;
             // Is there some better way to do this? Behaviour doesn't seem to match the tree crate
-            // examples, but they use simple types
+            // examples, but they use simple types. In any case we don't move the memory, and it
+            // remains valid so doesn't violate the Pin invariants.
             unsafe {
                 let item = Pin::into_inner_unchecked(item);
-                item.data_mut().selected();
+                selection_result = item.data_mut().selected();
+                if selection_result == SelectedData::Submenu() {
+                    self.active_submenu_tree = Some(item.deep_clone());
+                    self.menu_state = MenuState::new();
+                    let active_tree = self.get_active_tree();
+                    self.menu_state
+                        .update_item_count(active_tree.iter().count());
+                }
             }
         }
     }
-}
 
-impl<C> Drawable for Menu<'_, C>
-where
-    C: PixelColor,
-{
-    type Color = C;
-    type Output = ();
-
-    fn draw<D>(&self, display: &mut D) -> Result<Self::Output, D::Error>
+    fn draw_menu<D>(
+        &self,
+        display: &mut D,
+        menu_tree: &Tree<MenuItems<'_, C>>,
+    ) -> Result<(), D::Error>
     where
-        D: DrawTarget<Color = Self::Color>,
+        D: DrawTarget<Color = C>,
     {
         let display_area = display.bounding_box();
         display.clear(self.menu_style.menu_background_color)?;
-        let header = self.menu_tree_root.data();
+        let header = menu_tree.data();
         let header_height = self.menu_style.heading_character_style.line_height();
         Text::with_baseline(
             header.label(),
@@ -148,11 +173,13 @@ where
         if self.menu_state.highlighted_item() > 1 {
             skip_count = self.menu_state.highlighted_item() - 1;
         }
-        if self.menu_state.highlighted_item() == self.menu_state.item_count() {
+        if self.menu_state.highlighted_item() == self.menu_state.item_count()
+            && self.menu_state.item_count() >= 2
+        {
             skip_count = self.menu_state.highlighted_item() - 2;
         }
 
-        let menu_iter = self.menu_tree_root.iter().skip(skip_count);
+        let menu_iter = menu_tree.iter().skip(skip_count);
 
         for (id, menu_item) in menu_iter.enumerate() {
             let item_height = menu_item.data().size().height;
@@ -172,6 +199,24 @@ where
                 AnchorY::Bottom,
             );
         }
+
+        Ok(())
+    }
+}
+
+impl<C> Drawable for Menu<'_, C>
+where
+    C: PixelColor,
+{
+    type Color = C;
+    type Output = ();
+
+    fn draw<D>(&self, display: &mut D) -> Result<Self::Output, D::Error>
+    where
+        D: DrawTarget<Color = Self::Color>,
+    {
+        let active_tree = self.get_active_tree();
+        self.draw_menu(display, active_tree)?;
 
         Ok(())
     }
