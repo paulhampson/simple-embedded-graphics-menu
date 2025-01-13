@@ -14,7 +14,7 @@ use embedded_graphics::Drawable;
 use embedded_layout::View;
 
 #[derive(PartialEq, Clone, Copy)]
-pub struct SubmenuItem<'a, C>
+pub struct BackItem<'a, C>
 where
     C: PixelColor,
 {
@@ -24,12 +24,12 @@ where
     menu_style: MenuStyle<'a, C>,
 }
 
-impl<C> SubmenuItem<'_, C>
+impl<C> BackItem<'_, C>
 where
     C: PixelColor,
 {
-    pub const fn new<'a>(label: &'static str, menu_style: MenuStyle<'a, C>) -> SubmenuItem<'a, C> {
-        SubmenuItem {
+    pub const fn new<'a>(label: &'static str, menu_style: MenuStyle<'a, C>) -> BackItem<'a, C> {
+        BackItem {
             label,
             highlighted: false,
             position: Point::zero(),
@@ -57,13 +57,16 @@ where
         let filled_style = PrimitiveStyle::with_fill(indicator_fill_color);
 
         Triangle::new(
-            Point::new(0, indicator_vertical_pad as i32),
             Point::new(
-                0,
-                (submenu_indicator_size.height - indicator_vertical_pad) as i32,
+                (submenu_indicator_size.width - indicator_right_pad) as i32,
+                indicator_vertical_pad as i32,
             ),
             Point::new(
                 (submenu_indicator_size.width - indicator_right_pad) as i32,
+                (submenu_indicator_size.height - indicator_vertical_pad) as i32,
+            ),
+            Point::new(
+                0,
                 (((submenu_indicator_size.height - indicator_vertical_pad * 2) / 2)
                     + indicator_vertical_pad) as i32,
             ),
@@ -89,7 +92,7 @@ where
     }
 }
 
-impl<C> MenuItem for SubmenuItem<'_, C>
+impl<C> MenuItem for BackItem<'_, C>
 where
     C: PixelColor,
 {
@@ -98,12 +101,12 @@ where
     }
 }
 
-impl<C> MenuItemData for SubmenuItem<'_, C>
+impl<C> MenuItemData for BackItem<'_, C>
 where
     C: PixelColor,
 {
     fn selected(&mut self) -> SelectedData {
-        SelectedData::Submenu()
+        SelectedData::Back()
     }
 
     fn display_string(&self) -> &str {
@@ -111,16 +114,16 @@ where
     }
 }
 
-impl<C> Debug for SubmenuItem<'_, C>
+impl<C> Debug for BackItem<'_, C>
 where
     C: PixelColor,
 {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "[\"{}\":Submenu]", self.label)
+        write!(f, "[\"{}\":Back]", self.label)
     }
 }
 
-impl<C> Display for SubmenuItem<'_, C>
+impl<C> Display for BackItem<'_, C>
 where
     C: PixelColor,
 {
@@ -129,7 +132,7 @@ where
     }
 }
 
-impl<C> View for SubmenuItem<'_, C>
+impl<C> View for BackItem<'_, C>
 where
     C: PixelColor,
 {
@@ -145,7 +148,7 @@ where
     }
 }
 
-impl<C> Drawable for SubmenuItem<'_, C>
+impl<C> Drawable for BackItem<'_, C>
 where
     C: PixelColor,
 {
@@ -165,7 +168,7 @@ where
     }
 }
 
-impl<C: PixelColor> DrawableHighlighted for SubmenuItem<'_, C> {
+impl<C: PixelColor> DrawableHighlighted for BackItem<'_, C> {
     type Color = C;
     type Output = ();
 

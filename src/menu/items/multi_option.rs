@@ -57,7 +57,7 @@ where
 
 impl<C: PixelColor> Debug for MultiOptionItem<'_, C> {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "[\"{}\":Checkbox]", self.label)
+        write!(f, "[\"{}\":MultiOption]", self.label)
     }
 }
 

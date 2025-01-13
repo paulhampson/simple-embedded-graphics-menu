@@ -47,7 +47,7 @@ where
 
 impl<C: PixelColor> Debug for SectionItem<'_, C> {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "[\"{}\":Checkbox]", self.label)
+        write!(f, "[\"{}\":Section]", self.label)
     }
 }
 

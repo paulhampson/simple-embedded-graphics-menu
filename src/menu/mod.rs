@@ -1,10 +1,12 @@
 #![no_std]
 
 use crate::menu::items::{DrawableHighlighted, MenuItem, MenuItemData, SelectedData};
+use core::cmp::PartialEq;
 use core::pin::Pin;
 
 pub mod items;
 
+use crate::menu::items::backitem::BackItem;
 use crate::menu::items::checkbox::CheckboxItem;
 use crate::menu::items::multi_option::MultiOptionItem;
 use crate::menu::items::section::SectionItem;
@@ -25,7 +27,7 @@ where
     menu_tree_root: Tree<MenuItems<'a, C>>,
     menu_style: MenuStyle<'a, C>,
     menu_state: MenuState,
-    active_submenu_tree: Option<Tree<MenuItems<'a, C>>>,
+    active_submenu_node: Option<Tree<MenuItems<'a, C>>>,
 }
 
 impl<'a, C> Menu<'a, C>
@@ -38,7 +40,7 @@ where
             menu_tree_root: tree_root,
             menu_style,
             menu_state: MenuState::new(),
-            active_submenu_tree: None,
+            active_submenu_node: None,
         }
     }
 
@@ -78,10 +80,14 @@ where
             .update_item_count(self.menu_tree_root.iter().count());
     }
 
+    pub fn add_back(&mut self, label: &'static str) {
+        self.add_item(MenuItems::Back(BackItem::new(label, self.menu_style)));
+    }
+
     pub fn navigate_down(&mut self) {
         self.menu_state.move_down();
         if let Some(item) = self
-            .menu_tree_root
+            .get_active_submenu()
             .iter()
             .nth(self.menu_state.highlighted_item())
         {
@@ -104,9 +110,9 @@ where
         }
     }
 
-    fn get_mut_active_tree(&mut self) -> &mut Tree<MenuItems<'a, C>> {
+    fn get_mut_active_submenu(&mut self) -> &mut Tree<MenuItems<'a, C>> {
         let menu_tree: &mut Tree<MenuItems<'_, C>>;
-        if let Some(active_tree) = self.active_submenu_tree.as_mut() {
+        if let Some(active_tree) = self.active_submenu_node.as_mut() {
             menu_tree = active_tree;
         } else {
             menu_tree = &mut self.menu_tree_root;
@@ -114,9 +120,9 @@ where
         menu_tree
     }
 
-    fn get_active_tree(&self) -> &Tree<MenuItems<'a, C>> {
+    fn get_active_submenu(&self) -> &Tree<MenuItems<'a, C>> {
         let menu_tree: &Tree<MenuItems<'_, C>>;
-        if let Some(active_tree) = &self.active_submenu_tree {
+        if let Some(active_tree) = &self.active_submenu_node {
             menu_tree = active_tree;
         } else {
             menu_tree = &self.menu_tree_root;
@@ -124,9 +130,38 @@ where
         menu_tree
     }
 
+    fn navigate_to_menu(&mut self, target: Tree<MenuItems<'a, C>>) {
+        self.active_submenu_node = Some(target);
+        self.menu_state = MenuState::new();
+        let active_tree = self.get_active_submenu();
+        self.menu_state
+            .update_item_count(active_tree.iter().count());
+    }
+
+    fn navigate_to_selected_submenu(&mut self) {
+        let highlighted_item = self.menu_state.highlighted_item();
+        if let Some(item) = self.get_active_submenu().iter().nth(highlighted_item) {
+            self.active_submenu_node = Some(item.deep_clone());
+            self.menu_state = MenuState::new();
+            let active_tree = self.get_active_submenu();
+            self.menu_state
+                .update_item_count(active_tree.iter().count());
+        }
+    }
+
+    fn navigate_to_root(&mut self) {
+        self.active_submenu_node = None;
+        self.menu_state = MenuState::new();
+        let active_tree = self.get_active_submenu();
+        self.menu_state
+            .update_item_count(active_tree.iter().count());
+    }
+
     pub fn select_item(&mut self) {
         let highlighted_item = self.menu_state.highlighted_item();
-        if let Some(item) = self.get_mut_active_tree().iter_mut().nth(highlighted_item) {
+
+        let active_tree = self.get_mut_active_submenu();
+        if let Some(item) = active_tree.iter_mut().nth(highlighted_item) {
             let selection_result;
             // Is there some better way to do this? Behaviour doesn't seem to match the tree crate
             // examples, but they use simple types. In any case we don't move the memory, and it
@@ -134,12 +169,17 @@ where
             unsafe {
                 let item = Pin::into_inner_unchecked(item);
                 selection_result = item.data_mut().selected();
+
                 if selection_result == SelectedData::Submenu() {
-                    self.active_submenu_tree = Some(item.deep_clone());
-                    self.menu_state = MenuState::new();
-                    let active_tree = self.get_active_tree();
-                    self.menu_state
-                        .update_item_count(active_tree.iter().count());
+                    self.navigate_to_selected_submenu();
+                }
+                if selection_result == SelectedData::Back() {
+                    let active_menu = self.get_active_submenu();
+                    if let Some(parent_menu) = active_menu.parent().as_mut() {
+                        self.navigate_to_menu(parent_menu.deep_clone());
+                    } else {
+                        self.navigate_to_root();
+                    }
                 }
             }
         }
@@ -215,7 +255,7 @@ where
     where
         D: DrawTarget<Color = Self::Color>,
     {
-        let active_tree = self.get_active_tree();
+        let active_tree = self.get_active_submenu();
         self.draw_menu(display, active_tree)?;
 
         Ok(())

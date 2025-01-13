@@ -1,3 +1,4 @@
+use crate::menu::items::backitem::BackItem;
 use crate::menu::items::checkbox::CheckboxItem;
 use crate::menu::items::multi_option::MultiOptionItem;
 use crate::menu::items::section::SectionItem;
@@ -10,6 +11,7 @@ use embedded_graphics::primitives::Rectangle;
 use embedded_graphics::Drawable;
 use embedded_layout::View;
 
+pub mod backitem;
 pub mod checkbox;
 pub mod multi_option;
 pub mod section;
@@ -19,6 +21,7 @@ pub mod submenu;
 pub enum SelectedData {
     Checkbox(bool),
     Submenu(),
+    Back(),
     MultiOption(usize),
     Section(),
 }
@@ -51,6 +54,7 @@ where
     Submenu(SubmenuItem<'a, C>),
     Selector(MultiOptionItem<'a, C>),
     Section(SectionItem<'a, C>),
+    Back(BackItem<'a, C>),
 }
 
 impl<C> View for MenuItems<'_, C>
@@ -63,6 +67,7 @@ where
             MenuItems::Submenu(item) => item.translate_impl(by),
             MenuItems::Selector(item) => item.translate_impl(by),
             MenuItems::Section(item) => item.translate_impl(by),
+            MenuItems::Back(item) => item.translate_impl(by),
         }
     }
 
@@ -72,6 +77,7 @@ where
             MenuItems::Submenu(item) => item.bounds(),
             MenuItems::Selector(item) => item.bounds(),
             MenuItems::Section(item) => item.bounds(),
+            MenuItems::Back(item) => item.bounds(),
         }
     }
 }
@@ -86,6 +92,7 @@ where
             MenuItems::Submenu(item) => Display::fmt(&item, f),
             MenuItems::Selector(item) => Display::fmt(&item, f),
             MenuItems::Section(item) => Display::fmt(&item, f),
+            MenuItems::Back(item) => Display::fmt(&item, f),
         }
     }
 }
@@ -100,6 +107,7 @@ where
             MenuItems::Submenu(item) => item.selected(),
             MenuItems::Selector(item) => item.selected(),
             MenuItems::Section(item) => item.selected(),
+            MenuItems::Back(item) => item.selected(),
         }
     }
 
@@ -109,6 +117,7 @@ where
             MenuItems::Submenu(item) => item.display_string(),
             MenuItems::Selector(item) => item.display_string(),
             MenuItems::Section(item) => item.display_string(),
+            MenuItems::Back(item) => item.display_string(),
         }
     }
 }
@@ -123,6 +132,7 @@ where
             MenuItems::Submenu(item) => item.label(),
             MenuItems::Selector(item) => item.label(),
             MenuItems::Section(item) => item.label(),
+            MenuItems::Back(item) => item.label(),
         }
     }
 }
@@ -143,6 +153,7 @@ where
             MenuItems::Submenu(item) => item.draw(display),
             MenuItems::Selector(item) => item.draw(display),
             MenuItems::Section(item) => item.draw(display),
+            MenuItems::Back(item) => item.draw(display),
         }
     }
 }
@@ -160,6 +171,7 @@ impl<C: PixelColor> DrawableHighlighted for MenuItems<'_, C> {
             MenuItems::Submenu(item) => item.draw_highlighted(display),
             MenuItems::Selector(item) => item.draw_highlighted(display),
             MenuItems::Section(item) => item.draw_highlighted(display),
+            MenuItems::Back(item) => item.draw_highlighted(display),
         }
     }
 }
