@@ -1,3 +1,4 @@
+#![no_std]
 use core::cmp::PartialEq;
 use core::pin::Pin;
 use items::{DrawableHighlighted, MenuItem, MenuItemData, SelectedData};
