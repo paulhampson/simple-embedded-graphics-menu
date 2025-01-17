@@ -1,7 +1,3 @@
-//! # Example: Hello world
-//!
-//! A simple hello world example displaying some primitive shapes and some text underneath.
-
 #![no_std]
 
 mod menu;
@@ -13,8 +9,9 @@ use embedded_graphics_simulator::sdl2::Keycode;
 use embedded_graphics_simulator::{
     BinaryColorTheme, OutputSettingsBuilder, SimulatorDisplay, SimulatorEvent, Window,
 };
+use log::info;
 
-fn build_menu<'a>() -> Menu<'a, BinaryColor> {
+fn build_menu<'a>() -> Menu<'a, BinaryColor, i32> {
     let heading_style = MonoTextStyle::new(&FONT_7X13_BOLD, BinaryColor::On);
     let item_style = MonoTextStyle::new(&FONT_6X10, BinaryColor::On);
     let highlighted_item_style = MonoTextStyle::new(&FONT_6X10, BinaryColor::Off);
@@ -29,35 +26,39 @@ fn build_menu<'a>() -> Menu<'a, BinaryColor> {
         BinaryColor::Off,
     );
 
-    let mut menu_root = Menu::new("M1 Heading", menu_style);
-    menu_root.add_checkbox("M1 Check 1");
+    let mut counter = 0..100;
+    let mut menu_root = Menu::new("M1 Heading", counter.next().unwrap_or(0i32), menu_style);
+    menu_root.add_checkbox("M1 Check 1", counter.next().unwrap_or(0i32));
     let options = &["a", "b", "c"];
-    menu_root.add_selector("M1 Selector 1", options);
-    menu_root.add_section("Section 1");
+    menu_root.add_selector("M1 Selector 1", counter.next().unwrap_or(0i32), options);
+    menu_root.add_section("Section 1", counter.next().unwrap_or(0i32));
 
-    let mut sm = Menu::new("M1-1", menu_style);
-    sm.add_checkbox("M1-1 Check 1");
-    sm.add_back("Back");
+    let mut sm = Menu::new("M1-1", counter.next().unwrap_or(0i32), menu_style);
+    sm.add_checkbox("M1-1 Check 1", counter.next().unwrap_or(0i32));
+    sm.add_back("Back", counter.next().unwrap_or(0i32));
     menu_root.add_submenu(sm);
 
-    let mut sm = Menu::new("M1-2", menu_style);
-    sm.add_checkbox("M1-2 Check 1");
+    let mut sm = Menu::new("M1-2", counter.next().unwrap_or(0i32), menu_style);
+    sm.add_checkbox("M1-2 Check 1", counter.next().unwrap_or(0i32));
     let options = &["m1-2c", "m1-2d", "m1-2e"];
-    sm.add_selector("M1-2 Selector 1", options);
-    sm.add_back("Back");
+    sm.add_selector("M1-2 Selector 1", counter.next().unwrap_or(0i32), options);
+    sm.add_back("Back", counter.next().unwrap_or(0i32));
     menu_root.add_submenu(sm);
 
-    menu_root.add_section("Section 2");
-    menu_root.add_checkbox("M1 Check 2");
+    menu_root.add_section("Section 2", counter.next().unwrap_or(0i32));
+    menu_root.add_checkbox("M1 Check 2", counter.next().unwrap_or(0i32));
     let options = &["c", "d", "e"];
-    menu_root.add_selector("M1 Selector 2", options);
+    menu_root.add_selector("M1 Selector 2", counter.next().unwrap_or(0i32), options);
     let options = &["f", "g", "h"];
-    menu_root.add_selector("M1 Selector 3", options);
+    menu_root.add_selector("M1 Selector 3", counter.next().unwrap_or(0i32), options);
+    menu_root.add_action("Action 1", counter.next().unwrap_or(0i32));
+    menu_root.add_exit("Exit", counter.next().unwrap_or(0i32));
 
     menu_root
 }
 
 fn main() -> Result<(), core::convert::Infallible> {
+    env_logger::init();
     let mut display: SimulatorDisplay<BinaryColor> = SimulatorDisplay::new(Size::new(128, 64));
 
     let mut menu = build_menu();
@@ -78,7 +79,11 @@ fn main() -> Result<(), core::convert::Infallible> {
                     match keycode {
                         Keycode::Up => menu.navigate_up(),
                         Keycode::Down => menu.navigate_down(),
-                        Keycode::Return => menu.select_item(),
+                        Keycode::Return => {
+                            if let Some(selected_data) = menu.select_item() {
+                                info!("{:?}", selected_data);
+                            }
+                        }
                         _ => (),
                     };
                 }

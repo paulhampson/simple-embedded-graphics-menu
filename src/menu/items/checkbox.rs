@@ -13,53 +13,75 @@ use embedded_graphics::Drawable;
 use embedded_layout::View;
 
 #[derive(PartialEq, Clone, Copy)]
-pub struct CheckboxItem<'a, C>
+pub struct CheckboxItem<'a, C, T>
 where
     C: PixelColor,
+    T: Clone + Copy + Sized,
 {
     label: &'static str,
     position: Point,
     menu_style: MenuStyle<'a, C>,
     checkbox_state: bool,
+    id: T,
 }
 
-impl<C> CheckboxItem<'_, C>
+impl<C, T> CheckboxItem<'_, C, T>
 where
     C: PixelColor,
+    T: Clone + Copy + Sized,
 {
-    pub const fn new<'a>(label: &'static str, menu_style: MenuStyle<'a, C>) -> CheckboxItem<'a, C> {
+    pub const fn new<'a>(
+        label: &'static str,
+        id: T,
+        menu_style: MenuStyle<'a, C>,
+    ) -> CheckboxItem<'a, C, T> {
         let initial_state = false;
         CheckboxItem {
             label,
             position: Point::zero(),
             menu_style,
             checkbox_state: initial_state,
+            id,
         }
     }
 }
 
-impl<C> MenuItem for CheckboxItem<'_, C>
+impl<C, T> MenuItem<T> for CheckboxItem<'_, C, T>
 where
     C: PixelColor,
+    T: Clone + Copy + Sized,
 {
     fn label(&self) -> &'static str {
         self.label
     }
+
+    fn id(&self) -> T {
+        self.id
+    }
 }
 
-impl<C: PixelColor> Debug for CheckboxItem<'_, C> {
+impl<C: PixelColor, T> Debug for CheckboxItem<'_, C, T>
+where
+    T: Clone + Copy + Sized,
+{
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         write!(f, "[\"{}\":Checkbox]", self.label)
     }
 }
 
-impl<C: PixelColor> Display for CheckboxItem<'_, C> {
+impl<C: PixelColor, T> Display for CheckboxItem<'_, C, T>
+where
+    T: Clone + Copy + Sized,
+{
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.label)
     }
 }
 
-impl<C: PixelColor> View for CheckboxItem<'_, C> {
+impl<C: PixelColor, T> View for CheckboxItem<'_, C, T>
+where
+    T: Copy + Clone + Sized,
+{
     fn translate_impl(&mut self, by: Point) {
         self.position += by;
     }
@@ -72,7 +94,10 @@ impl<C: PixelColor> View for CheckboxItem<'_, C> {
     }
 }
 
-impl<C: PixelColor> Drawable for CheckboxItem<'_, C> {
+impl<C: PixelColor, T> Drawable for CheckboxItem<'_, C, T>
+where
+    T: Clone + Copy + Sized,
+{
     type Color = C;
     type Output = ();
 
@@ -103,7 +128,10 @@ impl<C: PixelColor> Drawable for CheckboxItem<'_, C> {
     }
 }
 
-impl<C: PixelColor> DrawableHighlighted for CheckboxItem<'_, C> {
+impl<C: PixelColor, T> DrawableHighlighted for CheckboxItem<'_, C, T>
+where
+    T: Clone + Copy + Sized,
+{
     type Color = C;
     type Output = ();
 
@@ -148,13 +176,17 @@ impl<C: PixelColor> DrawableHighlighted for CheckboxItem<'_, C> {
     }
 }
 
-impl<C> MenuItemData for CheckboxItem<'_, C>
+impl<C, T> MenuItemData<T> for CheckboxItem<'_, C, T>
 where
     C: PixelColor,
+    T: Clone + Copy + Sized,
 {
-    fn selected(&mut self) -> SelectedData {
+    fn selected(&mut self) -> SelectedData<T> {
         self.checkbox_state = !self.checkbox_state;
-        SelectedData::Checkbox(self.checkbox_state)
+        SelectedData::Checkbox {
+            id: self.id,
+            state: self.checkbox_state,
+        }
     }
 
     fn display_string(&self) -> &str {

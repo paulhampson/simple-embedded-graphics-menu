@@ -1,41 +1,45 @@
-#![no_std]
-
-use crate::menu::items::{DrawableHighlighted, MenuItem, MenuItemData, SelectedData};
 use core::cmp::PartialEq;
 use core::pin::Pin;
+use items::{DrawableHighlighted, MenuItem, MenuItemData, SelectedData};
 
 pub mod items;
 
-use crate::menu::items::backitem::BackItem;
-use crate::menu::items::checkbox::CheckboxItem;
-use crate::menu::items::multi_option::MultiOptionItem;
-use crate::menu::items::section::SectionItem;
-use crate::menu::items::submenu::SubmenuItem;
-use crate::menu::items::MenuItems;
+use crate::menu::items::action::ActionItem;
+use crate::menu::items::exit_item::ExitItem;
 use embedded_graphics::geometry::AnchorY;
 use embedded_graphics::mono_font::MonoTextStyle;
 use embedded_graphics::prelude::*;
 use embedded_graphics::text::renderer::TextRenderer;
 use embedded_graphics::text::{Baseline, Text};
 use embedded_layout::View;
+use items::back_item::BackItem;
+use items::checkbox::CheckboxItem;
+use items::multi_option::MultiOptionItem;
+use items::section::SectionItem;
+use items::submenu::SubmenuItem;
+use items::MenuItems;
 use trees::Tree;
 
-pub struct Menu<'a, C>
+pub struct Menu<'a, C, T>
 where
     C: PixelColor,
+    T: Clone + Copy + Sized,
 {
-    menu_tree_root: Tree<MenuItems<'a, C>>,
+    menu_tree_root: Tree<MenuItems<'a, C, T>>,
     menu_style: MenuStyle<'a, C>,
     menu_state: MenuState,
-    active_submenu_node: Option<Tree<MenuItems<'a, C>>>,
+    active_submenu_node: Option<Tree<MenuItems<'a, C, T>>>,
 }
 
-impl<'a, C> Menu<'a, C>
+impl<'a, C, T> Menu<'a, C, T>
 where
     C: PixelColor,
+    T: Clone + Copy + Sized,
 {
-    pub fn new(label: &'static str, menu_style: MenuStyle<'a, C>) -> Self {
-        let tree_root = Tree::new(MenuItems::Submenu(SubmenuItem::new(label, menu_style)));
+    pub fn new(label: &'static str, root_id: T, menu_style: MenuStyle<'a, C>) -> Self {
+        let tree_root = Tree::new(MenuItems::Submenu(SubmenuItem::new(
+            label, root_id, menu_style,
+        )));
         Self {
             menu_tree_root: tree_root,
             menu_style,
@@ -45,43 +49,63 @@ where
     }
 
     /// Add menu item to the menu structure that will be drawn
-    pub fn add_item(&mut self, item: MenuItems<'a, C>) {
+    pub fn add_item(&mut self, item: MenuItems<'a, C, T>) {
         self.menu_tree_root.push_back(Tree::new(item));
         self.menu_state
             .update_item_count(self.menu_tree_root.iter().count());
     }
 
     /// Add checkbox as next item in the menu
-    pub fn add_checkbox(&mut self, label: &'static str) {
+    pub fn add_checkbox(&mut self, label: &'static str, id: T) {
         self.add_item(MenuItems::Checkbox(CheckboxItem::new(
             label,
+            id,
             self.menu_style,
         )));
     }
 
-    /// Add selector as next item in the menu
-    pub fn add_selector(&mut self, label: &'static str, options: &'a [&'static str]) {
+    /// Add multi-option selector as next item in the menu
+    pub fn add_selector(&mut self, label: &'static str, id: T, options: &'a [&'static str]) {
         self.add_item(MenuItems::Selector(MultiOptionItem::new(
             label,
+            id,
             self.menu_style,
             options,
         )));
     }
 
     /// Add section (non-selectable item) as next item in the menu
-    pub fn add_section(&mut self, label: &'static str) {
-        self.add_item(MenuItems::Section(SectionItem::new(label, self.menu_style)));
+    pub fn add_section(&mut self, label: &'static str, id: T) {
+        self.add_item(MenuItems::Section(SectionItem::new(
+            label,
+            id,
+            self.menu_style,
+        )));
     }
 
     /// Add a sub-menu to the menu structure that will be drawn
-    pub fn add_submenu(&mut self, submenu: Menu<'a, C>) {
+    pub fn add_submenu(&mut self, submenu: Menu<'a, C, T>) {
         self.menu_tree_root.push_back(submenu.into());
         self.menu_state
             .update_item_count(self.menu_tree_root.iter().count());
     }
 
-    pub fn add_back(&mut self, label: &'static str) {
-        self.add_item(MenuItems::Back(BackItem::new(label, self.menu_style)));
+    /// Add back item to the menu
+    pub fn add_back(&mut self, label: &'static str, id: T) {
+        self.add_item(MenuItems::Back(BackItem::new(label, id, self.menu_style)));
+    }
+
+    /// Add action item to the menu
+    pub fn add_action(&mut self, label: &'static str, id: T) {
+        self.add_item(MenuItems::Action(ActionItem::new(
+            label,
+            id,
+            self.menu_style,
+        )));
+    }
+
+    pub fn add_exit(&mut self, label: &'static str, id: T) {
+        self.add_item(MenuItems::Exit(ExitItem::new(label, id, self.menu_style)));
     }
 
     pub fn navigate_down(&mut self) {
@@ -110,8 +134,8 @@ where
         }
     }
 
-    fn get_mut_active_submenu(&mut self) -> &mut Tree<MenuItems<'a, C>> {
-        let menu_tree: &mut Tree<MenuItems<'_, C>>;
+    fn get_mut_active_submenu(&mut self) -> &mut Tree<MenuItems<'a, C, T>> {
+        let menu_tree: &mut Tree<MenuItems<'_, C, T>>;
         if let Some(active_tree) = self.active_submenu_node.as_mut() {
             menu_tree = active_tree;
         } else {
@@ -120,8 +144,8 @@ where
         menu_tree
     }
 
-    fn get_active_submenu(&self) -> &Tree<MenuItems<'a, C>> {
-        let menu_tree: &Tree<MenuItems<'_, C>>;
+    fn get_active_submenu(&self) -> &Tree<MenuItems<'a, C, T>> {
+        let menu_tree: &Tree<MenuItems<'_, C, T>>;
         if let Some(active_tree) = &self.active_submenu_node {
             menu_tree = active_tree;
         } else {
@@ -130,7 +154,7 @@ where
         menu_tree
     }
 
-    fn navigate_to_menu(&mut self, target: Tree<MenuItems<'a, C>>) {
+    fn navigate_to_menu(&mut self, target: Tree<MenuItems<'a, C, T>>) {
         self.active_submenu_node = Some(target);
         self.menu_state = MenuState::new();
         let active_tree = self.get_active_submenu();
@@ -157,38 +181,41 @@ where
             .update_item_count(active_tree.iter().count());
     }
 
-    pub fn select_item(&mut self) {
+    pub fn select_item(&mut self) -> Option<SelectedData<T>> {
         let highlighted_item = self.menu_state.highlighted_item();
 
         let active_tree = self.get_mut_active_submenu();
         if let Some(item) = active_tree.iter_mut().nth(highlighted_item) {
             let selection_result;
-            // Is there some better way to do this? Behaviour doesn't seem to match the tree crate
-            // examples, but they use simple types. In any case we don't move the memory, and it
-            // remains valid so doesn't violate the Pin invariants.
+            // I seem to be missing something potentially? Behaviour doesn't seem to match the tree
+            // crate examples, but they use simple types. In any case we don't move the memory, and
+            // it remains valid so doesn't violate the Pin invariants.
             unsafe {
                 let item = Pin::into_inner_unchecked(item);
                 selection_result = item.data_mut().selected();
 
-                if selection_result == SelectedData::Submenu() {
-                    self.navigate_to_selected_submenu();
-                }
-                if selection_result == SelectedData::Back() {
-                    let active_menu = self.get_active_submenu();
-                    if let Some(parent_menu) = active_menu.parent().as_mut() {
-                        self.navigate_to_menu(parent_menu.deep_clone());
-                    } else {
-                        self.navigate_to_root();
+                match selection_result {
+                    SelectedData::Submenu { id: _ } => self.navigate_to_selected_submenu(),
+                    SelectedData::Back { id: _ } => {
+                        let active_menu = self.get_active_submenu();
+                        if let Some(parent_menu) = active_menu.parent().as_mut() {
+                            self.navigate_to_menu(parent_menu.deep_clone());
+                        } else {
+                            self.navigate_to_root();
+                        }
                     }
+                    _ => {}
                 }
             }
+            return Some(selection_result);
         }
+        None
     }
 
     fn draw_menu<D>(
         &self,
         display: &mut D,
-        menu_tree: &Tree<MenuItems<'_, C>>,
+        menu_tree: &Tree<MenuItems<'_, C, T>>,
     ) -> Result<(), D::Error>
     where
         D: DrawTarget<Color = C>,
@@ -244,9 +271,10 @@ where
     }
 }
 
-impl<C> Drawable for Menu<'_, C>
+impl<C, T> Drawable for Menu<'_, C, T>
 where
     C: PixelColor,
+    T: Copy + Clone + Sized,
 {
     type Color = C;
     type Output = ();
@@ -262,11 +290,12 @@ where
     }
 }
 
-impl<'a, C> From<Menu<'a, C>> for Tree<MenuItems<'a, C>>
+impl<'a, C, T> From<Menu<'a, C, T>> for Tree<MenuItems<'a, C, T>>
 where
     C: PixelColor,
+    T: Copy + Clone + Sized,
 {
-    fn from(menu: Menu<'a, C>) -> Tree<MenuItems<'a, C>> {
+    fn from(menu: Menu<'a, C, T>) -> Tree<MenuItems<'a, C, T>> {
         menu.menu_tree_root
     }
 }

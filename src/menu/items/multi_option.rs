@@ -13,9 +13,10 @@ use embedded_graphics::Drawable;
 use embedded_layout::View;
 
 #[derive(PartialEq, Clone, Copy)]
-pub struct MultiOptionItem<'a, C>
+pub struct MultiOptionItem<'a, C, T>
 where
     C: PixelColor,
+    T: Clone + Copy + Sized,
 {
     label: &'static str,
     highlighted: bool,
@@ -23,17 +24,20 @@ where
     menu_style: MenuStyle<'a, C>,
     current_option_index: usize,
     options: &'a [&'static str],
+    id: T,
 }
 
-impl<C> MultiOptionItem<'_, C>
+impl<C, T> MultiOptionItem<'_, C, T>
 where
     C: PixelColor,
+    T: Clone + Copy + Sized,
 {
     pub const fn new<'a>(
         label: &'static str,
+        id: T,
         menu_style: MenuStyle<'a, C>,
         options: &'a [&'static str],
-    ) -> MultiOptionItem<'a, C> {
+    ) -> MultiOptionItem<'a, C, T> {
         let initial_index = 0;
         MultiOptionItem {
             label,
@@ -42,32 +46,46 @@ where
             menu_style,
             current_option_index: initial_index,
             options,
+            id,
         }
     }
 }
 
-impl<C> MenuItem for MultiOptionItem<'_, C>
+impl<C, T> MenuItem<T> for MultiOptionItem<'_, C, T>
 where
     C: PixelColor,
+    T: Clone + Copy + Sized,
 {
     fn label(&self) -> &'static str {
         self.label
     }
+    fn id(&self) -> T {
+        self.id
+    }
 }
 
-impl<C: PixelColor> Debug for MultiOptionItem<'_, C> {
+impl<C: PixelColor, T> Debug for MultiOptionItem<'_, C, T>
+where
+    T: Clone + Copy + Sized,
+{
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         write!(f, "[\"{}\":MultiOption]", self.label)
     }
 }
 
-impl<C: PixelColor> Display for MultiOptionItem<'_, C> {
+impl<C: PixelColor, T> Display for MultiOptionItem<'_, C, T>
+where
+    T: Clone + Copy + Sized,
+{
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.label)
     }
 }
 
-impl<C: PixelColor> View for MultiOptionItem<'_, C> {
+impl<C: PixelColor, T> View for MultiOptionItem<'_, C, T>
+where
+    T: Clone + Copy + Sized,
+{
     fn translate_impl(&mut self, by: Point) {
         self.position += by;
     }
@@ -80,7 +98,10 @@ impl<C: PixelColor> View for MultiOptionItem<'_, C> {
     }
 }
 
-impl<C: PixelColor> Drawable for MultiOptionItem<'_, C> {
+impl<C: PixelColor, T> Drawable for MultiOptionItem<'_, C, T>
+where
+    T: Clone + Copy + Sized,
+{
     type Color = C;
     type Output = ();
 
@@ -111,7 +132,10 @@ impl<C: PixelColor> Drawable for MultiOptionItem<'_, C> {
     }
 }
 
-impl<C: PixelColor> DrawableHighlighted for MultiOptionItem<'_, C> {
+impl<C: PixelColor, T> DrawableHighlighted for MultiOptionItem<'_, C, T>
+where
+    T: Clone + Copy + Sized,
+{
     type Color = C;
     type Output = ();
 
@@ -156,16 +180,20 @@ impl<C: PixelColor> DrawableHighlighted for MultiOptionItem<'_, C> {
     }
 }
 
-impl<C> MenuItemData for MultiOptionItem<'_, C>
+impl<C, T> MenuItemData<T> for MultiOptionItem<'_, C, T>
 where
     C: PixelColor,
+    T: Clone + Copy + Sized,
 {
-    fn selected(&mut self) -> SelectedData {
+    fn selected(&mut self) -> SelectedData<T> {
         self.current_option_index += 1;
         if self.current_option_index >= self.options.len() {
             self.current_option_index = 0;
         }
-        SelectedData::MultiOption(self.current_option_index)
+        SelectedData::MultiOption {
+            id: self.id,
+            option_id: self.current_option_index,
+        }
     }
 
     fn display_string(&self) -> &str {

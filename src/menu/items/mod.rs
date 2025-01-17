@@ -1,8 +1,7 @@
-use crate::menu::items::backitem::BackItem;
-use crate::menu::items::checkbox::CheckboxItem;
-use crate::menu::items::multi_option::MultiOptionItem;
-use crate::menu::items::section::SectionItem;
-use crate::menu::items::submenu::SubmenuItem;
+use crate::menu::items::action::ActionItem;
+use crate::menu::items::exit_item::ExitItem;
+use back_item::BackItem;
+use checkbox::CheckboxItem;
 use core::fmt::{Display, Formatter};
 use embedded_graphics::draw_target::DrawTarget;
 use embedded_graphics::geometry::Point;
@@ -10,24 +9,33 @@ use embedded_graphics::prelude::PixelColor;
 use embedded_graphics::primitives::Rectangle;
 use embedded_graphics::Drawable;
 use embedded_layout::View;
+use multi_option::MultiOptionItem;
+use section::SectionItem;
+use submenu::SubmenuItem;
 
-pub mod backitem;
+pub mod action;
+pub mod back_item;
 pub mod checkbox;
+pub mod exit_item;
 pub mod multi_option;
 pub mod section;
 pub mod submenu;
 
-#[derive(Clone, Copy, PartialEq)]
-pub enum SelectedData {
-    Checkbox(bool),
-    Submenu(),
-    Back(),
-    MultiOption(usize),
-    Section(),
+#[derive(Clone, Copy, PartialEq, Debug)]
+pub enum SelectedData<T> {
+    Checkbox { id: T, state: bool },
+    Submenu { id: T },
+    Back { id: T },
+    MultiOption { id: T, option_id: usize },
+    Section { id: T },
+    Action { id: T },
+    Exit { id: T },
 }
 
-pub trait MenuItem: View + Drawable + DrawableHighlighted + Display + MenuItemData {
+pub trait MenuItem<T>: View + Drawable + DrawableHighlighted + Display + MenuItemData<T> {
     fn label(&self) -> &'static str;
+
+    fn id(&self) -> T;
 }
 
 pub trait DrawableHighlighted {
@@ -39,27 +47,31 @@ pub trait DrawableHighlighted {
         D: DrawTarget<Color = Self::Color>;
 }
 
-pub trait MenuItemData {
-    fn selected(&mut self) -> SelectedData;
+pub trait MenuItemData<T> {
+    fn selected(&mut self) -> SelectedData<T>;
 
     fn display_string(&self) -> &str;
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub enum MenuItems<'a, C>
+pub enum MenuItems<'a, C, T>
 where
     C: PixelColor,
+    T: Clone + Copy + Sized,
 {
-    Checkbox(CheckboxItem<'a, C>),
-    Submenu(SubmenuItem<'a, C>),
-    Selector(MultiOptionItem<'a, C>),
-    Section(SectionItem<'a, C>),
-    Back(BackItem<'a, C>),
+    Checkbox(CheckboxItem<'a, C, T>),
+    Submenu(SubmenuItem<'a, C, T>),
+    Selector(MultiOptionItem<'a, C, T>),
+    Section(SectionItem<'a, C, T>),
+    Back(BackItem<'a, C, T>),
+    Action(ActionItem<'a, C, T>),
+    Exit(ExitItem<'a, C, T>),
 }
 
-impl<C> View for MenuItems<'_, C>
+impl<C, T> View for MenuItems<'_, C, T>
 where
     C: PixelColor,
+    T: Copy + Clone + Sized,
 {
     fn translate_impl(&mut self, by: Point) {
         match self {
@@ -68,6 +80,8 @@ where
             MenuItems::Selector(item) => item.translate_impl(by),
             MenuItems::Section(item) => item.translate_impl(by),
             MenuItems::Back(item) => item.translate_impl(by),
+            MenuItems::Action(item) => item.translate_impl(by),
+            MenuItems::Exit(item) => item.translate_impl(by),
         }
     }
 
@@ -78,13 +92,16 @@ where
             MenuItems::Selector(item) => item.bounds(),
             MenuItems::Section(item) => item.bounds(),
             MenuItems::Back(item) => item.bounds(),
+            MenuItems::Action(item) => item.bounds(),
+            MenuItems::Exit(item) => item.bounds(),
         }
     }
 }
 
-impl<C> Display for MenuItems<'_, C>
+impl<C, T> Display for MenuItems<'_, C, T>
 where
     C: PixelColor,
+    T: Copy + Clone + Sized,
 {
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
         match self {
@@ -93,21 +110,26 @@ where
             MenuItems::Selector(item) => Display::fmt(&item, f),
             MenuItems::Section(item) => Display::fmt(&item, f),
             MenuItems::Back(item) => Display::fmt(&item, f),
+            MenuItems::Action(item) => Display::fmt(&item, f),
+            MenuItems::Exit(item) => Display::fmt(&item, f),
         }
     }
 }
 
-impl<C> MenuItemData for MenuItems<'_, C>
+impl<C, T> MenuItemData<T> for MenuItems<'_, C, T>
 where
     C: PixelColor,
+    T: Copy + Clone + Sized,
 {
-    fn selected(&mut self) -> SelectedData {
+    fn selected(&mut self) -> SelectedData<T> {
         match self {
             MenuItems::Checkbox(item) => item.selected(),
             MenuItems::Submenu(item) => item.selected(),
             MenuItems::Selector(item) => item.selected(),
             MenuItems::Section(item) => item.selected(),
             MenuItems::Back(item) => item.selected(),
+            MenuItems::Action(item) => item.selected(),
+            MenuItems::Exit(item) => item.selected(),
         }
     }
 
@@ -118,13 +140,16 @@ where
             MenuItems::Selector(item) => item.display_string(),
             MenuItems::Section(item) => item.display_string(),
             MenuItems::Back(item) => item.display_string(),
+            MenuItems::Action(item) => item.display_string(),
+            MenuItems::Exit(item) => item.display_string(),
         }
     }
 }
 
-impl<C> MenuItem for MenuItems<'_, C>
+impl<C, T> MenuItem<T> for MenuItems<'_, C, T>
 where
     C: PixelColor,
+    T: Copy + Clone + Sized,
 {
     fn label(&self) -> &'static str {
         match self {
@@ -133,13 +158,28 @@ where
             MenuItems::Selector(item) => item.label(),
             MenuItems::Section(item) => item.label(),
             MenuItems::Back(item) => item.label(),
+            MenuItems::Action(item) => item.label(),
+            MenuItems::Exit(item) => item.label(),
+        }
+    }
+
+    fn id(&self) -> T {
+        match self {
+            MenuItems::Checkbox(item) => item.id(),
+            MenuItems::Submenu(item) => item.id(),
+            MenuItems::Selector(item) => item.id(),
+            MenuItems::Section(item) => item.id(),
+            MenuItems::Back(item) => item.id(),
+            MenuItems::Action(item) => item.id(),
+            MenuItems::Exit(item) => item.id(),
         }
     }
 }
 
-impl<C> Drawable for MenuItems<'_, C>
+impl<C, T> Drawable for MenuItems<'_, C, T>
 where
     C: PixelColor,
+    T: Copy + Clone + Sized,
 {
     type Color = C;
     type Output = ();
@@ -154,11 +194,16 @@ where
             MenuItems::Selector(item) => item.draw(display),
             MenuItems::Section(item) => item.draw(display),
             MenuItems::Back(item) => item.draw(display),
+            MenuItems::Action(item) => item.draw(display),
+            MenuItems::Exit(item) => item.draw(display),
         }
     }
 }
 
-impl<C: PixelColor> DrawableHighlighted for MenuItems<'_, C> {
+impl<C: PixelColor, T> DrawableHighlighted for MenuItems<'_, C, T>
+where
+    T: Copy + Clone + Sized,
+{
     type Color = C;
     type Output = ();
 
@@ -172,6 +217,8 @@ impl<C: PixelColor> DrawableHighlighted for MenuItems<'_, C> {
             MenuItems::Selector(item) => item.draw_highlighted(display),
             MenuItems::Section(item) => item.draw_highlighted(display),
             MenuItems::Back(item) => item.draw_highlighted(display),
+            MenuItems::Action(item) => item.draw_highlighted(display),
+            MenuItems::Exit(item) => item.draw_highlighted(display),
         }
     }
 }

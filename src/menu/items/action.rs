@@ -14,26 +14,34 @@ use embedded_graphics::Drawable;
 use embedded_layout::View;
 
 #[derive(PartialEq, Clone, Copy)]
-pub struct BackItem<'a, C>
+pub struct ActionItem<'a, C, T>
 where
     C: PixelColor,
+    T: Clone + Copy + Sized,
 {
     label: &'static str,
     highlighted: bool,
     position: Point,
     menu_style: MenuStyle<'a, C>,
+    id: T,
 }
 
-impl<C> BackItem<'_, C>
+impl<C, T> ActionItem<'_, C, T>
 where
     C: PixelColor,
+    T: Clone + Copy + Sized,
 {
-    pub const fn new<'a>(label: &'static str, menu_style: MenuStyle<'a, C>) -> BackItem<'a, C> {
-        BackItem {
+    pub const fn new<'a>(
+        label: &'static str,
+        id: T,
+        menu_style: MenuStyle<'a, C>,
+    ) -> ActionItem<'a, C, T> {
+        ActionItem {
             label,
             highlighted: false,
             position: Point::zero(),
             menu_style,
+            id,
         }
     }
 
@@ -57,16 +65,13 @@ where
         let filled_style = PrimitiveStyle::with_fill(indicator_fill_color);
 
         Triangle::new(
+            Point::new(0, indicator_vertical_pad as i32),
             Point::new(
-                (submenu_indicator_size.width - indicator_right_pad) as i32,
-                indicator_vertical_pad as i32,
-            ),
-            Point::new(
-                (submenu_indicator_size.width - indicator_right_pad) as i32,
+                0,
                 (submenu_indicator_size.height - indicator_vertical_pad) as i32,
             ),
             Point::new(
-                0,
+                (submenu_indicator_size.width - indicator_right_pad) as i32,
                 (((submenu_indicator_size.height - indicator_vertical_pad * 2) / 2)
                     + indicator_vertical_pad) as i32,
             ),
@@ -92,21 +97,27 @@ where
     }
 }
 
-impl<C> MenuItem for BackItem<'_, C>
+impl<C, T> MenuItem<T> for ActionItem<'_, C, T>
 where
     C: PixelColor,
+    T: Clone + Copy + Sized,
 {
     fn label(&self) -> &'static str {
         self.label
     }
+
+    fn id(&self) -> T {
+        self.id
+    }
 }
 
-impl<C> MenuItemData for BackItem<'_, C>
+impl<C, T> MenuItemData<T> for ActionItem<'_, C, T>
 where
     C: PixelColor,
+    T: Clone + Copy + Sized,
 {
-    fn selected(&mut self) -> SelectedData {
-        SelectedData::Back()
+    fn selected(&mut self) -> SelectedData<T> {
+        SelectedData::Action { id: self.id }
     }
 
     fn display_string(&self) -> &str {
@@ -114,27 +125,30 @@ where
     }
 }
 
-impl<C> Debug for BackItem<'_, C>
+impl<C, T> Debug for ActionItem<'_, C, T>
 where
     C: PixelColor,
+    T: Clone + Copy + Sized,
 {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "[\"{}\":Back]", self.label)
+        write!(f, "[\"{}\":Submenu]", self.label)
     }
 }
 
-impl<C> Display for BackItem<'_, C>
+impl<C, T> Display for ActionItem<'_, C, T>
 where
     C: PixelColor,
+    T: Clone + Copy + Sized,
 {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.label)
     }
 }
 
-impl<C> View for BackItem<'_, C>
+impl<C, T> View for ActionItem<'_, C, T>
 where
     C: PixelColor,
+    T: Clone + Copy + Sized,
 {
     fn translate_impl(&mut self, by: Point) {
         self.position += by;
@@ -148,9 +162,10 @@ where
     }
 }
 
-impl<C> Drawable for BackItem<'_, C>
+impl<C, T> Drawable for ActionItem<'_, C, T>
 where
     C: PixelColor,
+    T: Clone + Copy + Sized,
 {
     type Color = C;
     type Output = ();
@@ -168,7 +183,10 @@ where
     }
 }
 
-impl<C: PixelColor> DrawableHighlighted for BackItem<'_, C> {
+impl<C: PixelColor, T> DrawableHighlighted for ActionItem<'_, C, T>
+where
+    T: Clone + Copy + Sized,
+{
     type Color = C;
     type Output = ();
 

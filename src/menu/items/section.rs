@@ -12,7 +12,7 @@ use embedded_graphics::Drawable;
 use embedded_layout::View;
 
 #[derive(PartialEq, Clone, Copy)]
-pub struct SectionItem<'a, C>
+pub struct SectionItem<'a, C, T>
 where
     C: PixelColor,
 {
@@ -20,44 +20,61 @@ where
     highlighted: bool,
     position: Point,
     menu_style: MenuStyle<'a, C>,
+    id: T,
 }
 
-impl<C> SectionItem<'_, C>
+impl<C, T> SectionItem<'_, C, T>
 where
     C: PixelColor,
+    T: Clone + Copy + Sized,
 {
-    pub const fn new<'a>(label: &'static str, menu_style: MenuStyle<'a, C>) -> SectionItem<'a, C> {
+    pub const fn new<'a>(
+        label: &'static str,
+        id: T,
+        menu_style: MenuStyle<'a, C>,
+    ) -> SectionItem<'a, C, T> {
         SectionItem {
             label,
             highlighted: false,
             position: Point::zero(),
             menu_style,
+            id,
         }
     }
 }
 
-impl<C> MenuItem for SectionItem<'_, C>
+impl<C, T> MenuItem<T> for SectionItem<'_, C, T>
 where
     C: PixelColor,
+    T: Clone + Copy + Sized,
 {
     fn label(&self) -> &'static str {
         self.label
     }
+    fn id(&self) -> T {
+        self.id
+    }
 }
 
-impl<C: PixelColor> Debug for SectionItem<'_, C> {
+impl<C: PixelColor, T> Debug for SectionItem<'_, C, T> {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         write!(f, "[\"{}\":Section]", self.label)
     }
 }
 
-impl<C: PixelColor> Display for SectionItem<'_, C> {
+impl<C: PixelColor, T> Display for SectionItem<'_, C, T>
+where
+    T: Clone + Copy + Sized,
+{
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.label)
     }
 }
 
-impl<C: PixelColor> View for SectionItem<'_, C> {
+impl<C: PixelColor, T> View for SectionItem<'_, C, T>
+where
+    T: Clone + Copy + Sized,
+{
     fn translate_impl(&mut self, by: Point) {
         self.position += by;
     }
@@ -70,7 +87,10 @@ impl<C: PixelColor> View for SectionItem<'_, C> {
     }
 }
 
-impl<C: PixelColor> Drawable for SectionItem<'_, C> {
+impl<C: PixelColor, T> Drawable for SectionItem<'_, C, T>
+where
+    T: Clone + Copy + Sized,
+{
     type Color = C;
     type Output = ();
 
@@ -93,7 +113,10 @@ impl<C: PixelColor> Drawable for SectionItem<'_, C> {
     }
 }
 
-impl<C: PixelColor> DrawableHighlighted for SectionItem<'_, C> {
+impl<C: PixelColor, T> DrawableHighlighted for SectionItem<'_, C, T>
+where
+    T: Clone + Copy + Sized,
+{
     type Color = C;
     type Output = ();
 
@@ -105,12 +128,13 @@ impl<C: PixelColor> DrawableHighlighted for SectionItem<'_, C> {
     }
 }
 
-impl<C> MenuItemData for SectionItem<'_, C>
+impl<C, T> MenuItemData<T> for SectionItem<'_, C, T>
 where
     C: PixelColor,
+    T: Clone + Copy + Sized,
 {
-    fn selected(&mut self) -> SelectedData {
-        SelectedData::Section()
+    fn selected(&mut self) -> SelectedData<T> {
+        SelectedData::Section { id: self.id }
     }
 
     fn display_string(&self) -> &str {
