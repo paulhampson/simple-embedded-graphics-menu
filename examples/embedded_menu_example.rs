@@ -1,8 +1,5 @@
 #![no_std]
 
-mod menu;
-
-use crate::menu::{Menu, MenuStyle};
 use embedded_graphics::mono_font::ascii::{FONT_6X10, FONT_7X13_BOLD};
 use embedded_graphics::{mono_font::MonoTextStyle, pixelcolor::BinaryColor, prelude::*};
 use embedded_graphics_simulator::sdl2::Keycode;
@@ -10,6 +7,7 @@ use embedded_graphics_simulator::{
     BinaryColorTheme, OutputSettingsBuilder, SimulatorDisplay, SimulatorEvent, Window,
 };
 use log::info;
+use simple_embedded_graphics_menu::{Menu, MenuStyle};
 
 fn build_menu<'a>() -> Menu<'a, BinaryColor, i32> {
     let heading_style = MonoTextStyle::new(&FONT_7X13_BOLD, BinaryColor::On);

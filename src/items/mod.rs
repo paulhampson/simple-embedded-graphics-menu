@@ -1,5 +1,4 @@
-use crate::menu::items::action::ActionItem;
-use crate::menu::items::exit_item::ExitItem;
+use action::ActionItem;
 use back_item::BackItem;
 use checkbox::CheckboxItem;
 use core::fmt::{Display, Formatter};
@@ -9,6 +8,7 @@ use embedded_graphics::prelude::PixelColor;
 use embedded_graphics::primitives::Rectangle;
 use embedded_graphics::Drawable;
 use embedded_layout::View;
+use exit_item::ExitItem;
 use multi_option::MultiOptionItem;
 use section::SectionItem;
 use submenu::SubmenuItem;

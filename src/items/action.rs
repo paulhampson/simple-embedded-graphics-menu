@@ -1,5 +1,5 @@
-use crate::menu::items::{DrawableHighlighted, MenuItem, MenuItemData, SelectedData};
-use crate::menu::MenuStyle;
+use crate::items::{DrawableHighlighted, MenuItem, MenuItemData, SelectedData};
+use crate::MenuStyle;
 use core::fmt;
 use core::fmt::{Debug, Display, Formatter};
 use embedded_graphics::draw_target::{DrawTarget, DrawTargetExt};

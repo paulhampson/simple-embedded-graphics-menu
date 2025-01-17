@@ -1,5 +1,5 @@
 [package]
-name = "embedded_gfx_menu_dev"
+name = "simple_embedded_graphics_menu"
 version = "0.1.0"
 edition = "2021"
 

@@ -4,16 +4,16 @@ use items::{DrawableHighlighted, MenuItem, MenuItemData, SelectedData};
 
 pub mod items;
 
-use crate::menu::items::action::ActionItem;
-use crate::menu::items::exit_item::ExitItem;
 use embedded_graphics::geometry::AnchorY;
 use embedded_graphics::mono_font::MonoTextStyle;
 use embedded_graphics::prelude::*;
 use embedded_graphics::text::renderer::TextRenderer;
 use embedded_graphics::text::{Baseline, Text};
 use embedded_layout::View;
+use items::action::ActionItem;
 use items::back_item::BackItem;
 use items::checkbox::CheckboxItem;
+use items::exit_item::ExitItem;
 use items::multi_option::MultiOptionItem;
 use items::section::SectionItem;
 use items::submenu::SubmenuItem;

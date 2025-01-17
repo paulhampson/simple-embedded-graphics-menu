@@ -1,11 +1,11 @@
-use crate::menu::items::{DrawableHighlighted, MenuItem, MenuItemData, SelectedData};
-use crate::menu::MenuStyle;
+use crate::items::{DrawableHighlighted, MenuItem, MenuItemData, SelectedData};
+use crate::MenuStyle;
 use core::fmt;
 use core::fmt::{Debug, Display, Formatter};
 use embedded_graphics::draw_target::DrawTarget;
-use embedded_graphics::geometry::Point;
+use embedded_graphics::geometry::{Point, Size};
 use embedded_graphics::pixelcolor::PixelColor;
-use embedded_graphics::prelude::{Primitive, Size};
+use embedded_graphics::prelude::Primitive;
 use embedded_graphics::primitives::{PrimitiveStyleBuilder, Rectangle};
 use embedded_graphics::text::renderer::TextRenderer;
 use embedded_graphics::text::{Alignment, Baseline, Text, TextStyleBuilder};
@@ -13,21 +13,19 @@ use embedded_graphics::Drawable;
 use embedded_layout::View;
 
 #[derive(PartialEq, Clone, Copy)]
-pub struct MultiOptionItem<'a, C, T>
+pub struct CheckboxItem<'a, C, T>
 where
     C: PixelColor,
     T: Clone + Copy + Sized,
 {
     label: &'static str,
-    highlighted: bool,
     position: Point,
     menu_style: MenuStyle<'a, C>,
-    current_option_index: usize,
-    options: &'a [&'static str],
+    checkbox_state: bool,
     id: T,
 }
 
-impl<C, T> MultiOptionItem<'_, C, T>
+impl<C, T> CheckboxItem<'_, C, T>
 where
     C: PixelColor,
     T: Clone + Copy + Sized,
@@ -36,22 +34,19 @@ where
         label: &'static str,
         id: T,
         menu_style: MenuStyle<'a, C>,
-        options: &'a [&'static str],
-    ) -> MultiOptionItem<'a, C, T> {
-        let initial_index = 0;
-        MultiOptionItem {
+    ) -> CheckboxItem<'a, C, T> {
+        let initial_state = false;
+        CheckboxItem {
             label,
-            highlighted: false,
             position: Point::zero(),
             menu_style,
-            current_option_index: initial_index,
-            options,
+            checkbox_state: initial_state,
             id,
         }
     }
 }
 
-impl<C, T> MenuItem<T> for MultiOptionItem<'_, C, T>
+impl<C, T> MenuItem<T> for CheckboxItem<'_, C, T>
 where
     C: PixelColor,
     T: Clone + Copy + Sized,
@@ -59,21 +54,22 @@ where
     fn label(&self) -> &'static str {
         self.label
     }
+
     fn id(&self) -> T {
         self.id
     }
 }
 
-impl<C: PixelColor, T> Debug for MultiOptionItem<'_, C, T>
+impl<C: PixelColor, T> Debug for CheckboxItem<'_, C, T>
 where
     T: Clone + Copy + Sized,
 {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "[\"{}\":MultiOption]", self.label)
+        write!(f, "[\"{}\":Checkbox]", self.label)
     }
 }
 
-impl<C: PixelColor, T> Display for MultiOptionItem<'_, C, T>
+impl<C: PixelColor, T> Display for CheckboxItem<'_, C, T>
 where
     T: Clone + Copy + Sized,
 {
@@ -82,9 +78,9 @@ where
     }
 }
 
-impl<C: PixelColor, T> View for MultiOptionItem<'_, C, T>
+impl<C: PixelColor, T> View for CheckboxItem<'_, C, T>
 where
-    T: Clone + Copy + Sized,
+    T: Copy + Clone + Sized,
 {
     fn translate_impl(&mut self, by: Point) {
         self.position += by;
@@ -98,7 +94,7 @@ where
     }
 }
 
-impl<C: PixelColor, T> Drawable for MultiOptionItem<'_, C, T>
+impl<C: PixelColor, T> Drawable for CheckboxItem<'_, C, T>
 where
     T: Clone + Copy + Sized,
 {
@@ -132,7 +128,7 @@ where
     }
 }
 
-impl<C: PixelColor, T> DrawableHighlighted for MultiOptionItem<'_, C, T>
+impl<C: PixelColor, T> DrawableHighlighted for CheckboxItem<'_, C, T>
 where
     T: Clone + Copy + Sized,
 {
@@ -180,23 +176,23 @@ where
     }
 }
 
-impl<C, T> MenuItemData<T> for MultiOptionItem<'_, C, T>
+impl<C, T> MenuItemData<T> for CheckboxItem<'_, C, T>
 where
     C: PixelColor,
     T: Clone + Copy + Sized,
 {
     fn selected(&mut self) -> SelectedData<T> {
-        self.current_option_index += 1;
-        if self.current_option_index >= self.options.len() {
-            self.current_option_index = 0;
-        }
-        SelectedData::MultiOption {
+        self.checkbox_state = !self.checkbox_state;
+        SelectedData::Checkbox {
             id: self.id,
-            option_id: self.current_option_index,
+            state: self.checkbox_state,
         }
     }
 
     fn display_string(&self) -> &str {
-        self.options[self.current_option_index]
+        match self.checkbox_state {
+            true => "[X]",
+            false => "[ ]",
+        }
     }
 }

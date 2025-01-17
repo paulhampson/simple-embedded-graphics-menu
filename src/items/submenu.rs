@@ -1,5 +1,5 @@
-use crate::menu::MenuStyle;
-use crate::menu::{DrawableHighlighted, MenuItem, MenuItemData, SelectedData};
+use crate::items::{DrawableHighlighted, MenuItem, MenuItemData, SelectedData};
+use crate::MenuStyle;
 use core::fmt;
 use core::fmt::{Debug, Display, Formatter};
 use embedded_graphics::draw_target::{DrawTarget, DrawTargetExt};
@@ -14,7 +14,7 @@ use embedded_graphics::Drawable;
 use embedded_layout::View;
 
 #[derive(PartialEq, Clone, Copy)]
-pub struct ExitItem<'a, C, T>
+pub struct SubmenuItem<'a, C, T>
 where
     C: PixelColor,
     T: Clone + Copy + Sized,
@@ -26,7 +26,7 @@ where
     id: T,
 }
 
-impl<C, T> ExitItem<'_, C, T>
+impl<C, T> SubmenuItem<'_, C, T>
 where
     C: PixelColor,
     T: Clone + Copy + Sized,
@@ -35,8 +35,8 @@ where
         label: &'static str,
         id: T,
         menu_style: MenuStyle<'a, C>,
-    ) -> ExitItem<'a, C, T> {
-        ExitItem {
+    ) -> SubmenuItem<'a, C, T> {
+        SubmenuItem {
             label,
             highlighted: false,
             position: Point::zero(),
@@ -65,16 +65,13 @@ where
         let filled_style = PrimitiveStyle::with_fill(indicator_fill_color);
 
         Triangle::new(
+            Point::new(0, indicator_vertical_pad as i32),
             Point::new(
-                (submenu_indicator_size.width - indicator_right_pad) as i32,
-                indicator_vertical_pad as i32,
-            ),
-            Point::new(
-                (submenu_indicator_size.width - indicator_right_pad) as i32,
+                0,
                 (submenu_indicator_size.height - indicator_vertical_pad) as i32,
             ),
             Point::new(
-                0,
+                (submenu_indicator_size.width - indicator_right_pad) as i32,
                 (((submenu_indicator_size.height - indicator_vertical_pad * 2) / 2)
                     + indicator_vertical_pad) as i32,
             ),
@@ -100,7 +97,7 @@ where
     }
 }
 
-impl<C, T> MenuItem<T> for ExitItem<'_, C, T>
+impl<C, T> MenuItem<T> for SubmenuItem<'_, C, T>
 where
     C: PixelColor,
     T: Clone + Copy + Sized,
@@ -114,13 +111,13 @@ where
     }
 }
 
-impl<C, T> MenuItemData<T> for ExitItem<'_, C, T>
+impl<C, T> MenuItemData<T> for SubmenuItem<'_, C, T>
 where
     C: PixelColor,
     T: Clone + Copy + Sized,
 {
     fn selected(&mut self) -> SelectedData<T> {
-        SelectedData::Exit { id: self.id }
+        SelectedData::Submenu { id: self.id }
     }
 
     fn display_string(&self) -> &str {
@@ -128,17 +125,17 @@ where
     }
 }
 
-impl<C, T> Debug for ExitItem<'_, C, T>
+impl<C, T> Debug for SubmenuItem<'_, C, T>
 where
     C: PixelColor,
     T: Clone + Copy + Sized,
 {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "[\"{}\":Back]", self.label)
+        write!(f, "[\"{}\":Submenu]", self.label)
     }
 }
 
-impl<C, T> Display for ExitItem<'_, C, T>
+impl<C, T> Display for SubmenuItem<'_, C, T>
 where
     C: PixelColor,
     T: Clone + Copy + Sized,
@@ -148,10 +145,10 @@ where
     }
 }
 
-impl<C, T> View for ExitItem<'_, C, T>
+impl<C, T> View for SubmenuItem<'_, C, T>
 where
     C: PixelColor,
-    T: Clone + Copy + Sized,
+    T: Copy + Clone + Sized,
 {
     fn translate_impl(&mut self, by: Point) {
         self.position += by;
@@ -165,7 +162,7 @@ where
     }
 }
 
-impl<C, T> Drawable for ExitItem<'_, C, T>
+impl<C, T> Drawable for SubmenuItem<'_, C, T>
 where
     C: PixelColor,
     T: Clone + Copy + Sized,
@@ -186,7 +183,7 @@ where
     }
 }
 
-impl<C: PixelColor, T> DrawableHighlighted for ExitItem<'_, C, T>
+impl<C: PixelColor, T> DrawableHighlighted for SubmenuItem<'_, C, T>
 where
     T: Clone + Copy + Sized,
 {
