@@ -236,15 +236,24 @@ where
         let mut remaining_item_area = display_area
             .resized_height(display_area.size().height - header_height, AnchorY::Bottom);
 
-        let mut skip_count = 0;
-
-        if self.menu_state.highlighted_item() > 1 {
-            skip_count = self.menu_state.highlighted_item() - 1;
+        // This is a fudgy workaround to the problem of starting menus with section headers which
+        // are un-highlightable. Once user scrolls once the menu state catches up. We need a proper
+        // builder to handle this particular edge case nicely and setup the menu state properly.
+        let mut highlighted_item = self.menu_state.highlighted_item();
+        while let Some(item) = self.get_active_submenu().iter().nth(highlighted_item) {
+            if let MenuItems::Section(_) = item.data() {
+                highlighted_item += 1
+            } else {
+                break;
+            }
         }
-        if self.menu_state.highlighted_item() == self.menu_state.item_count()
-            && self.menu_state.item_count() >= 2
-        {
-            skip_count = self.menu_state.highlighted_item() - 2;
+
+        let mut skip_count = 0;
+        if highlighted_item > 1 {
+            skip_count = highlighted_item - 1;
+        }
+        if highlighted_item == self.menu_state.item_count() && self.menu_state.item_count() >= 2 {
+            skip_count = highlighted_item - 2;
         }
 
         let menu_iter = menu_tree.iter().skip(skip_count);
@@ -256,7 +265,7 @@ where
             }
 
             let mut item_display = display.cropped(&remaining_item_area);
-            if id + skip_count == self.menu_state.highlighted_item() {
+            if id + skip_count == highlighted_item {
                 menu_item.data().draw_highlighted(&mut item_display)?;
             } else {
                 menu_item.data().draw(&mut item_display)?;

@@ -26,6 +26,7 @@ fn build_menu<'a>() -> Menu<'a, BinaryColor, i32> {
 
     let mut counter = 0..100;
     let mut menu_root = Menu::new("M1 Heading", counter.next().unwrap_or(0i32), menu_style);
+    menu_root.add_section("Section 0", counter.next().unwrap_or(0i32));
     menu_root.add_checkbox("M1 Check 1", counter.next().unwrap_or(0i32));
     let options = &["a", "b", "c"];
     menu_root.add_selector("M1 Selector 1", counter.next().unwrap_or(0i32), options);
