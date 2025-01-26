@@ -14,7 +14,6 @@ use embedded_graphics::Drawable;
 use embedded_layout::View;
 
 #[derive(PartialEq, Clone, Copy)]
-#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct ActionItem<'a, C, T>
 where
     C: PixelColor,
