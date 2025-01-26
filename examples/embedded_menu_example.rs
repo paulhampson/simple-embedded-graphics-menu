@@ -28,8 +28,13 @@ fn build_menu<'a>() -> Menu<'a, BinaryColor, i32> {
     let mut menu_root = Menu::new("M1 Heading", counter.next().unwrap_or(0i32), menu_style);
     menu_root.add_section("Section 0", counter.next().unwrap_or(0i32));
     menu_root.add_checkbox("M1 Check 1", counter.next().unwrap_or(0i32));
-    let options = &["a", "b", "c"];
-    menu_root.add_selector("M1 Selector 1", counter.next().unwrap_or(0i32), options);
+    let options = &["a0", "b1", "c2"];
+    menu_root.add_selector(
+        "M1 Selector 1",
+        counter.next().unwrap_or(0i32),
+        options,
+        None,
+    );
     menu_root.add_section("Section 1", counter.next().unwrap_or(0i32));
 
     let mut sm = Menu::new("M1-1", counter.next().unwrap_or(0i32), menu_style);
@@ -40,16 +45,31 @@ fn build_menu<'a>() -> Menu<'a, BinaryColor, i32> {
     let mut sm = Menu::new("M1-2", counter.next().unwrap_or(0i32), menu_style);
     sm.add_checkbox("M1-2 Check 1", counter.next().unwrap_or(0i32));
     let options = &["m1-2c", "m1-2d", "m1-2e"];
-    sm.add_selector("M1-2 Selector 1", counter.next().unwrap_or(0i32), options);
+    sm.add_selector(
+        "M1-2 Selector 1",
+        counter.next().unwrap_or(0i32),
+        options,
+        Some(34), // too big - will cap at last selector option (m1-2e)
+    );
     sm.add_back("Back", counter.next().unwrap_or(0i32));
     menu_root.add_submenu(sm);
 
     menu_root.add_section("Section 2", counter.next().unwrap_or(0i32));
     menu_root.add_checkbox("M1 Check 2", counter.next().unwrap_or(0i32));
-    let options = &["c", "d", "e"];
-    menu_root.add_selector("M1 Selector 2", counter.next().unwrap_or(0i32), options);
-    let options = &["f", "g", "h"];
-    menu_root.add_selector("M1 Selector 3", counter.next().unwrap_or(0i32), options);
+    let options = &["c0", "d1", "e2"];
+    menu_root.add_selector(
+        "M1 Selector 2",
+        counter.next().unwrap_or(0i32),
+        options,
+        Some(1),
+    );
+    let options = &["f0", "g1", "h2"];
+    menu_root.add_selector(
+        "M1 Selector 3",
+        counter.next().unwrap_or(0i32),
+        options,
+        Some(2),
+    );
     menu_root.add_action("Action 1", counter.next().unwrap_or(0i32));
     menu_root.add_exit("Exit", counter.next().unwrap_or(0i32));
 

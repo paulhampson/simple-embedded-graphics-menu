@@ -1,5 +1,6 @@
 use crate::items::{DrawableHighlighted, MenuItem, MenuItemData, SelectedData};
 use crate::MenuStyle;
+use core::cmp::min;
 use core::fmt;
 use core::fmt::{Debug, Display, Formatter};
 use embedded_graphics::draw_target::DrawTarget;
@@ -37,8 +38,8 @@ where
         id: T,
         menu_style: MenuStyle<'a, C>,
         options: &'a [&'static str],
+        initial_index: usize,
     ) -> MultiOptionItem<'a, C, T> {
-        let initial_index = 0;
         MultiOptionItem {
             label,
             highlighted: false,
@@ -197,6 +198,7 @@ where
     }
 
     fn display_string(&self) -> &str {
-        self.options[self.current_option_index]
+        let capped_initial_index = min(self.current_option_index, self.options.len() - 1);
+        self.options[capped_initial_index]
     }
 }

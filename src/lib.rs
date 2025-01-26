@@ -66,12 +66,19 @@ where
     }
 
     /// Add multi-option selector as next item in the menu
-    pub fn add_selector(&mut self, label: &'static str, id: T, options: &'a [&'static str]) {
+    pub fn add_selector(
+        &mut self,
+        label: &'static str,
+        id: T,
+        options: &'a [&'static str],
+        initial_option: Option<usize>,
+    ) {
         self.add_item(MenuItems::Selector(MultiOptionItem::new(
             label,
             id,
             self.menu_style,
             options,
+            initial_option.unwrap_or(0),
         )));
     }
 
