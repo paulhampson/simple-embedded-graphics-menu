@@ -34,8 +34,8 @@ where
         label: &'static str,
         id: T,
         menu_style: MenuStyle<'a, C>,
+        initial_state: bool,
     ) -> CheckboxItem<'a, C, T> {
-        let initial_state = false;
         CheckboxItem {
             label,
             position: Point::zero(),

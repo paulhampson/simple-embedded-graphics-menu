@@ -57,11 +57,12 @@ where
     }
 
     /// Add checkbox as next item in the menu
-    pub fn add_checkbox(&mut self, label: &'static str, id: T) {
+    pub fn add_checkbox(&mut self, label: &'static str, id: T, initial_state: bool) {
         self.add_item(MenuItems::Checkbox(CheckboxItem::new(
             label,
             id,
             self.menu_style,
+            initial_state,
         )));
     }
 

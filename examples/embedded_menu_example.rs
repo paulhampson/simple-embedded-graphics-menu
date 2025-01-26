@@ -27,7 +27,7 @@ fn build_menu<'a>() -> Menu<'a, BinaryColor, i32> {
     let mut counter = 0..100;
     let mut menu_root = Menu::new("M1 Heading", counter.next().unwrap_or(0i32), menu_style);
     menu_root.add_section("Section 0", counter.next().unwrap_or(0i32));
-    menu_root.add_checkbox("M1 Check 1", counter.next().unwrap_or(0i32));
+    menu_root.add_checkbox("M1 Check 1", counter.next().unwrap_or(0i32), false);
     let options = &["a0", "b1", "c2"];
     menu_root.add_selector(
         "M1 Selector 1",
@@ -38,12 +38,12 @@ fn build_menu<'a>() -> Menu<'a, BinaryColor, i32> {
     menu_root.add_section("Section 1", counter.next().unwrap_or(0i32));
 
     let mut sm = Menu::new("M1-1", counter.next().unwrap_or(0i32), menu_style);
-    sm.add_checkbox("M1-1 Check 1", counter.next().unwrap_or(0i32));
+    sm.add_checkbox("M1-1 Check 1", counter.next().unwrap_or(0i32), true);
     sm.add_back("Back", counter.next().unwrap_or(0i32));
     menu_root.add_submenu(sm);
 
     let mut sm = Menu::new("M1-2", counter.next().unwrap_or(0i32), menu_style);
-    sm.add_checkbox("M1-2 Check 1", counter.next().unwrap_or(0i32));
+    sm.add_checkbox("M1-2 Check 1", counter.next().unwrap_or(0i32), false);
     let options = &["m1-2c", "m1-2d", "m1-2e"];
     sm.add_selector(
         "M1-2 Selector 1",
@@ -55,7 +55,7 @@ fn build_menu<'a>() -> Menu<'a, BinaryColor, i32> {
     menu_root.add_submenu(sm);
 
     menu_root.add_section("Section 2", counter.next().unwrap_or(0i32));
-    menu_root.add_checkbox("M1 Check 2", counter.next().unwrap_or(0i32));
+    menu_root.add_checkbox("M1 Check 2", counter.next().unwrap_or(0i32), true);
     let options = &["c0", "d1", "e2"];
     menu_root.add_selector(
         "M1 Selector 2",
